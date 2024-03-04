@@ -1,93 +1,81 @@
-#! /bin/bash
+#!/bin/bash
 source ../lib/util.sh
-source ../lib/menu.sh
+
+database_path="../databases"
 
 #--------------- function to create a database ----------------#
+
 function createDB(){
-    local dbname
-
-    while true; 
-    do
-        read -p "Enter the name of the new database: " dbname
-        if validate_name "$dbname"; 
-        then
-            if ! directory_exists "$dbname";    # There is no database with the same name as user entered
-            then
-                # Check if the 'databases' directory exists, if not, create it
-                if [ ! -d "../databases" ];
-                then
-                     mkdir "../databases"
-                fi
-
-                mkdir "../databases/$dbname"
-                echo -e "Database '$dbname' created \e[32msuccessfully\e[0m."
-
-
-            else       # There is a database with the same name as user entered
-		echo -e "\e[31mError\e[0m: Database '$dbname' already exists."
-
-                read -p "Do you want to choose a different name? (y/n): " choice
-                case "$choice" in
-                [yY])
-                    continue ;;
-                *)
-                    echo "Exiting..."
-                    break ;;
-                esac
-
-            fi
-            break
-        else
-            echo "Please enter a valid name."
-        fi
-    done
+    local dbname=$1
+    if ! validate_name "$dbname" ; then
+        return 1
+    fi
+    # There is no database with the same name as user entered
+    if ! directory_exists "$database_path/$dbname";
+    then
+        # Check if the 'databases' directory exists, if not, create it
+        mkdir -p "$database_path/$dbname"
+        echo -e "Database '$dbname' created \e[32msuccessfully\e[0m."
+        return 0
+        # There is a database with the same name as user entered
+    else
+        echo -e "\e[31mError\e[0m: Database '$dbname' already exists."
+        return 1
+    fi
 }
 
 #--------------- function to list all database ----------------#
 
 function listDB(){
-if [ -d "../databases" ] && [ "$(ls -A ../databases)" ];
-then
-    echo "These are the databases in the system:"  
-    for db in $(ls ../databases)
-    do
-        echo "$db"
-    done
-else
-    echo "There are no databases in the system :(" 
-fi
+    if [ -d "$database_path" ] && [ "$(ls -A "$database_path")" ];
+    then
+        echo "These are the databases in the system:"
+        for db in $(ls "$database_path")
+        do
+            echo "$db"
+        done
+    else
+        echo "There are no databases in the system :("
+    fi
 }
 
 #--------------- function to drop all database ----------------#
 
 
 function dropDB(){
-local dbname
-
-    while true; 
-    do
-        read -p "Enter the name of the database you want to drop: " dbname
-        if validate_name "$dbname";
-        then
-            if directory_exists "$dbname";     # There is no database with the same name as user entered
-            then
-		echo -e "\e[31mError\e[0m: Database '$dbname' doesn't exist."
-                read -p "Do you want to choose a different name? (y/n): " choice
-                case "$choice" in
-                [yY])
-                    continue ;;
-                *)
-                    echo "Exiting..."
-                    break ;;
-                esac
-            else    # There is a database with the same name as user entered   
-	        rm -r "../databases/$dbname"
-                echo -e "Database '$dbname' dropped \e[32msuccessfully\e[0m."
-            fi
-            break
-        else
-            echo "Please enter a valid name."
-        fi
-    done
+    local dbname=$1
+    if  ! validate_name "$dbname" ; then
+        return 1
+    fi
+    # There is no database with the same name as user entered
+    if ! directory_exists "$database_path/$dbname";
+    then
+        echo -e "\e[31mError\e[0m: Database '$dbname' doesn't exist."
+        return 1
+        # There is a database with the same name as user entered
+    else
+        rm -r "$database_path/$dbname"
+        echo -e "Database '$dbname' dropped \e[32msuccessfully\e[0m."
+        return 0
+    fi
 }
 
+#--------------- function to connect to a database ----------------#
+
+function connect_to_db {
+    local db_name=$1
+    if ! validate_name "$db_name"; then
+        return 1
+    fi
+    if ! directory_exists $database_path/$db_name; then
+        echo "Database does not exist"
+        return 1
+    else
+        echo "Connecting to $db_name"
+        
+        cd $database_path/$db_name
+        #echo $PWD #print working directory for testing
+        PS3="$db_name> " #change the prompt to the db name
+        return 0
+    fi
+}

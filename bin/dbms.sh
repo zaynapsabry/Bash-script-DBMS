@@ -1,9 +1,7 @@
 #/bin/bash
 
 source ../lib/menu.sh
-source ../lib/createDB.sh
-source ../lib/listDB.sh
-source ../lib/dropDB.sh
+source ../lib/database.sh
 
 while true; 
 do

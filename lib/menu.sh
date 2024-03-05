@@ -62,14 +62,14 @@ function display_table_menu {
 }
 
 
-# function try-agin(){
-#     read -p "Do you want to choose a different name? (y/n): " choice
-#         case "$choice" in
-#         [yY])
-#             read -p "Enter db name: " name;;
-#             #function i want to pass name to
-#         *)
-#         echo "Exiting..."
-#             break ;;
-#         esac
-# }
+function try-agin(){
+    read -p "Do you want to choose a different name? (y/n): " choice
+        case "$choice" in
+        [yY])
+            read -p "Enter db name: " name;;
+            #function i want to pass name to
+        *)
+        echo "Exiting..."
+            break ;;
+        esac
+}

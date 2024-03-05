@@ -44,6 +44,5 @@ function validate_name {
     fi
 }
 
-#validate_db_name "hugy_d"
 
 

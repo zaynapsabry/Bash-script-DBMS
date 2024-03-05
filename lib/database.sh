@@ -19,7 +19,7 @@ function createDB(){
         return 0
         # There is a database with the same name as user entered
     else
-        echo -e "\e[31mError\e[0m: Database '$dbname' already exists."
+        echo -e "\e[31mWarning\e[0m: Database '$dbname' already exists."
         return 1
     fi
 }
@@ -68,7 +68,7 @@ function connect_to_db {
         return 1
     fi
     if ! directory_exists $database_path/$db_name; then
-        echo "Database does not exist"
+        echo "\e[31mWarning\e[0m: Database does not exist"
         return 1
     else
         echo "Connecting to $db_name"

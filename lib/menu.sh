@@ -1,6 +1,21 @@
 #!/bin/bash
 
 source ../lib/database.sh
+
+#continously ask user for input 
+function try-again(){
+    local func="$1"
+    read -p "Do you want to choose a different name? (y/n): " choice
+        case "$choice" in
+        [yY])
+            read -p "Enter db name: " name
+            $func "$name";;
+        *)
+        echo "Exiting..."
+            return 1;;
+        esac
+}
+
 #display the main menu
 function display_main_menu {
     clear
@@ -11,9 +26,9 @@ function display_main_menu {
         case $REPLY in
             1)
                 read -p "Enter db name: " name
-                createDB "$name"
-                if ! createDB; then
-                    try-again 
+                # createDB "$name"
+                if ! createDB "$name" ; then
+                    try-again createDB
                 fi    
             ;;
             2)
@@ -24,14 +39,14 @@ function display_main_menu {
                 read -p "Enter db name: " name
                 dropDB "$name"
                 if ! dropDB; then
-                    try-again
+                    try-again "dropDB"
                 fi 
             ;;
             4)
                 read -p "Enter db name: " name
                 if connect_to_db "$name"; then
                     if ! connect_to_db; then
-                        try-again
+                        try-again "connect_to_db"
                     fi
                 else 
                     display_table_menu
@@ -62,14 +77,3 @@ function display_table_menu {
 }
 
 
-function try-agin(){
-    read -p "Do you want to choose a different name? (y/n): " choice
-        case "$choice" in
-        [yY])
-            read -p "Enter db name: " name;;
-            #function i want to pass name to
-        *)
-        echo "Exiting..."
-            break ;;
-        esac
-}

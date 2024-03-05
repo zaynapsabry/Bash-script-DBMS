@@ -27,13 +27,15 @@ function createDB(){
 #--------------- function to list all database ----------------#
 
 function listDB(){
+    local databases = ""
     if [ -d "$database_path" ] && [ "$(ls -A "$database_path")" ];
     then
         echo "These are the databases in the system:"
         for db in $(ls "$database_path")
         do
-            echo "$db"
+            databases+="$(basename "$db") " 
         done
+        echo "$databases"
     else
         echo "There are no databases in the system :("
     fi
@@ -68,10 +70,10 @@ function connect_to_db {
         return 1
     fi
     if ! directory_exists $database_path/$db_name; then
-        echo "\e[31mWarning\e[0m: Database does not exist"
+        echo -e "\e[31mWarning\e[0m: Database does not exist"
         return 1
     else
-        echo "Connecting to $db_name"
+        echo -e "Connecting to \e[33m$db_name\e[0m"
         
         cd $database_path/$db_name
         #echo $PWD #print working directory for testing

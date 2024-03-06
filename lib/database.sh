@@ -1,7 +1,7 @@
 #!/bin/bash
 source ../lib/util.sh
 
-database_path="../databases"
+# database_path="../databases"
 
 #--------------- function to create a database ----------------#
 

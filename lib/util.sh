@@ -1,4 +1,5 @@
 #!/bin/bash
+database_path="../database"
 
 function directory_exists {
     if [ -d "$1" ]; then
@@ -44,5 +45,17 @@ function validate_name {
     fi
 }
 
+function validate_num(){
+    local num=$1
+    if [[ "$num" =~ ^[0-9]+$ ]]; then
+        return 0
+    elif [ -z "$num" ]; then
+        echo -e "\e[31mWarning:\e[0m Number is required"
+        return 1
+    else
+        echo -e "\e[31mWarning:\e[0m Invalid number"
+        return 1
+    fi
+}
 
 

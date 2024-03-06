@@ -1,5 +1,7 @@
 #!/bin/bash
 
+
+database_path="../databases"
 # Function to select all data from the file
 select_all_data() {
     local tablename=$1
@@ -33,7 +35,31 @@ select_row_data() {
     awk -F: -v col="$column" -v val="$column_value" '{ if ($col == val) print }' "$tablename"
 }
 
+# Create table function
+function create_table() {
+    local tablename=$1
+    local column_names=$2
+    local types=$3
+    local constraints=$4
+    local dbname=$5
 
+    if  file_exists "$database_path/$dbname/$tablename"; then
+        echo "Table '$tablename' already exists."
+        return 1
+    fi
+
+    # Create the table file
+    touch "$tablename"
+    touch "$tablename-metadata.txt"
+
+    # Add the columns to the table
+    for ((i=0; i<${#column_names[@]}; i++)); do
+        echo "  ${column_names[$i]}:${types[$i]}:${constraints[$i]}" >> "$tablename-metadata.txt"
+    done
+    
+    echo "Table '$tablename' created successfully."
+
+}
 
 # Function to check if a column exists in the header
 check_column_existence() {

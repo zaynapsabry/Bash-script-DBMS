@@ -127,7 +127,30 @@ function display_table_menu {
             fi
 
             ;;
-        3) echo "Drop a table" ;;
+        3) 
+            echo -e "\e[36mChoose a table to drop:\e[0m"
+            tables=($(ls "../$dbname"))
+            select table in "${tables[@]}"; do
+                if [[ -n $table ]]; then
+                    drop_table "$table" "$dbname"
+                    PS3="$dbname> "
+                    display_table_menu "$dbname"
+                else
+                    echo -e "\e[31mWarning:\e[0m invalid choice"
+                    read -p "Press (C/c) to continue: " choice
+                    case "$choice" in
+                    [cC])
+                        PS3="$dbname> "
+                        display_table_menu "$dbname"
+                        ;;
+                    *)
+                        echo "Exit...."
+                        exit
+                        ;;
+                    esac
+                fi
+            done
+        ;;
         4) echo "Insert into a table" ;;
         5) # Select from a table
             echo -e "\e[36mChoose a table to select from:\e[0m"

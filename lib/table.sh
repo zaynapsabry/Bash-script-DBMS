@@ -200,3 +200,17 @@ function create_table() {
     echo "Table '$tablename' created successfully."
 
 }
+
+# Function to drop a table
+function drop_table() {
+    local tablename=$1
+    local dbname=$2
+
+    if file_exists "$tablename"; then
+        rm "$tablename"
+        rm "$tablename-metadata.txt"
+        echo -e "Table '$tablename' dropped \e[32msuccessfully\e[0m."
+    else
+        echo -e "\e[31mError\e[0m: Table '$tablename' doesn't exist."
+    fi
+}

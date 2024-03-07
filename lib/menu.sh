@@ -25,7 +25,7 @@ function try-again() {
 #display the main menu
 function display_main_menu {
     clear
-    cd ../$database_path
+    cd ../$database_path 2>>/dev/null
     echo -e "\e[36m--------------------- Welcome to ZSH DBMS --------------------\e[0m"
     echo " "
     PS3="Main Menu> "
@@ -225,19 +225,21 @@ function display_select_from_table_menu {
                 esac
             else
                 echo -e "\e[36mThese are the fileds in table "$table":\e[0m"
-                fields=($(awk -F: 'NR==1 { gsub(":", "\t"); print }' "$table"))
+                fields=($(awk -F: 'NR==1 { gsub(":", "\t"); print }' "$table-metadata.txt"))
                 echo -e "\e[36mChoose field:\e[0m"
-                select field in "${fields[@]}"; do
-                    if [[ -n $field ]]; then
-                        echo -e "\e[36mThese are the data in $field\e[0m"
-                        select_column_data "$table" "$field" "$dbname"
-                        PS3="$dbname> "
-                        display_table_menu "$dbname"
-                    else
-                        echo -e "\e[31mWarning:\e[0m invalid choice"
-                        display_select_menu "$table" "$dbname"
-                    fi
-                done
+                # for field_index in "${!fields[@]}"; do
+                    select field in "${fields[@]}"; do
+                        if [[ -n $field ]]; then
+                            echo -e "\e[36mThese are the data in $field\e[0m"
+                            select_column_data "$table" "$REPLY" "$dbname"
+                            PS3="$dbname> "
+                            display_table_menu "$dbname"
+                        else
+                            echo -e "\e[31mWarning:\e[0m invalid choice"
+                            display_select_menu "$table" "$dbname"
+                        fi
+                    done
+                # done
             fi
             ;;
         3)
@@ -256,18 +258,21 @@ function display_select_from_table_menu {
                 esac
             else
                 echo -e "\e[36mThese are the fileds in table "$table":\e[0m"
-                fields=($(awk -F: 'NR==1 { gsub(":", "\t"); print }' "$table"))
+                fields=($(awk -F: 'NR==1 { gsub(":", "\t"); print }' "$table-metadata.txt"))
                 echo -e "\e[36mChoose field:\e[0m"
                 select field in "${fields[@]}"; do
                     if [[ -n $field ]]; then
                         read -p "Please select the column value to get it's rows: " column_value
                         #validation on column value
-                        select_row_data "$table" "$field" "$column_value" "$dbname"
+                        if ! select_row_data "$table" "$field" "$column_value" "$dbname"; then
+                            echo -e "\e[31mWarning:\e[0m No data found"
+                            display_select_from_table_menu "$table" "$dbname"
+                        fi
                         PS3="$dbname> "
                         display_table_menu "$dbname"
                     else
                         echo -e "\e[31mWarning:\e[0m invalid choice"
-                        display_select_menu "$table" "$dbname"
+                        display_select_from_table_menu "$table" "$dbname"
                     fi
                 done
             fi
@@ -413,7 +418,7 @@ function display_create_table_menu {
 }
 
 function display_select_type_menu {
-    local -n types=$1 2>> /dev/null
+    local -n types=$1 2>>/dev/null
     select type in "int" "string"; do
         case $REPLY in
         1)
@@ -434,7 +439,7 @@ function display_select_type_menu {
 }
 
 function display_select_constrain_menu {
-    local -n constraints=$1 2> /dev/null
+    local -n constraints=$1 2>/dev/null
     select constrain in "primary key" "unique" "not null" "none"; do
         case $REPLY in
         1)

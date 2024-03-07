@@ -41,20 +41,20 @@ function validate_name {
     if [ -z "$name" ]; then
         echo -e "\e[31mWarning:\e[0m Name is required"
         return 1
-        # Check if name contains any spaces
-        elif [[ "$name" =~ [[:space:]] ]]; then
+    # Check if name contains any spaces
+    elif [[ "$name" =~ [[:space:]] ]]; then
         echo -e "\e[31mWarning:\e[0m Name cannot contain spaces"
         return 1
-        # Check for invalid characters
-        elif [[ "$name" =~ [^a-zA-Z0-9_] ]]; then
+    # Check for invalid characters
+    elif [[ "$name" =~ [^a-zA-Z0-9_] ]]; then
         echo -e "\e[31mWarning:\e[0m Name contains invalid characters"
         return 1
-        # Check if name exceeds 64 characters
-        elif [ ${#name} -gt 64 ]; then
+    # Check if name exceeds 64 characters
+    elif [ ${#name} -gt 64 ]; then
         echo -e "\e[31mWarning:\e[0m Name is too long"
         return 1
-        # Check if name starts with a number
-        elif [[ "$name" =~ ^[0-9] ]]; then
+    # Check if name starts with a number
+    elif [[ "$name" =~ ^[0-9] ]]; then
         echo -e "\e[31mWarning:\e[0m Name cannot start with a number"
         return 1
     else
@@ -63,7 +63,7 @@ function validate_name {
     fi
 }
 
-function validate_num(){
+function validate_num() {
     local num=$1
     if [[ "$num" =~ ^[0-9]+$ ]]; then
         return 0
@@ -74,6 +74,68 @@ function validate_num(){
         echo -e "\e[31mWarning:\e[0m Invalid number"
         return 1
     fi
+
 }
+# function validate_col_type_value_input {
+#     local col_value=$1
+#     local tablename=$2
+#     local column=$3
+#     local dbname=$4
 
+#     awk -F ':' -v col_value="$col_value" -v column="$column" '
+#     NR >= 1 {
+#         if ($2 == "int") {
+#             if (!($col_value ~ /^[0-9]+$/)) {
+#                 print "Invalid input for column", column, ": Expected integer value"
+#                 return 1
+#             }
+#         }
+#         if ($2 == "string") {
+#             if (!(col_value ~ /^[a-zA-Z0-9_]+$/) || col_value == "" || col ~ /[[:space:]]/) {
+#                 print "Invalid input for column", column, ": Expected non-empty string"
+#                 return 1
+#             }
+#         }
+#     }' "$tablename-metadata.txt"
+#     return 0
+# }
+function validate_col_type_value_input {
+    local col_value=$1
+    local tablename=$2
+    local column=$3
+    local dbname=$4
 
+    local col_type=$(awk -F: -v col="$column" '
+        BEGIN { found=0 }
+        NR==1 {
+            for (i=1; i<=NF; i++) {
+                if ($i == col) {
+                    col_num=i
+                    found=1
+                    break
+                }
+            }
+        }
+        found==1 && NR==2 {
+            print $col_num
+            exit
+        }' "$tablename-metadata.txt")
+
+    if [[ -z "$col_type" ]]; then
+        echo "Column '$column' not found in metadata."
+        return 1
+    fi
+
+    if [[ "$col_type" == "int" ]]; then
+        if ! [[ "$col_value" =~ ^[0-9]+$ ]]; then
+            echo -e "\e[31mError:\e[0m The value of the column should be an integer."
+            return 1
+        fi
+    elif [[ "$col_type" == "string" ]]; then
+        if ! [[ "$col_value" =~ ^[a-zA-Z]+$ ]]; then
+            echo -e "\e[31mError:\e[0m The value of the column should be a string."
+            return 1
+        fi
+    fi
+    return 0
+}

@@ -91,7 +91,7 @@ function display_main_menu {
             done
             ;;
         5) exit 0 ;;
-        *) echo "Invalid choice" ;;
+        *) cho -e "\e[31mWarning:\e[0m invalid choice" ;;
         esac
     done
 }

@@ -227,7 +227,6 @@ function display_select_from_table_menu {
                 echo -e "\e[36mThese are the fileds in table "$table":\e[0m"
                 fields=($(awk -F: 'NR==1 { gsub(":", "\t"); print }' "$table-metadata.txt"))
                 echo -e "\e[36mChoose field:\e[0m"
-                # for field_index in "${!fields[@]}"; do
                     select field in "${fields[@]}"; do
                         if [[ -n $field ]]; then
                             echo -e "\e[36mThese are the data in $field\e[0m"
@@ -239,7 +238,6 @@ function display_select_from_table_menu {
                             display_select_menu "$table" "$dbname"
                         fi
                     done
-                # done
             fi
             ;;
         3)
@@ -262,9 +260,9 @@ function display_select_from_table_menu {
                 echo -e "\e[36mChoose field:\e[0m"
                 select field in "${fields[@]}"; do
                     if [[ -n $field ]]; then
-                        read -p "Please select the column value to get it's rows: " column_value
+                        read -p "Please enter the column value to get it's rows: " column_value
                         #validation on column value
-                        if ! select_row_data "$table" "$field" "$column_value" "$dbname"; then
+                        if ! select_row_data "$table" "$REPLY" "$column_value" "$dbname"; then
                             echo -e "\e[31mWarning:\e[0m No data found"
                             display_select_from_table_menu "$table" "$dbname"
                         fi
@@ -287,7 +285,7 @@ function display_delete_from_table_menu {
     local table=$1
     local dbname=$2
     PS3="Delete from table $table> "
-    select choice in "Delete all" "Delete row" "Exit"; do
+    select choice in "Delete all" "Delete Column" "Delete row" "Exit"; do
         case $REPLY in
         1)
             if ! file_empty "$table"; then
@@ -310,10 +308,72 @@ function display_delete_from_table_menu {
             fi
             ;;
         2)
-            echo "Delete rows"
-
+            if ! file_empty "$table"; then
+                echo -e "\e[36mThere is no data in table "$table"\e[0m"
+                read -p "Press (C/c) to continue: " choice
+                case "$choice" in
+                [cC])
+                    PS3="$dbname> "
+                    display_table_menu "$dbname"
+                    ;;
+                *)
+                    echo "Exit...."
+                    exit
+                    ;;
+                esac
+            else
+                echo -e "\e[36mThese are the fileds in table "$table":\e[0m"
+                fields=($(awk -F: 'NR==1 { gsub(":", "\t"); print }' "$table-metadata.txt"))
+                echo -e "\e[36mChoose field:\e[0m"
+                    select field in "${fields[@]}"; do
+                        if [[ -n $field ]]; then
+                            echo -e "\e[36mThese are the data in $field\e[0m"
+                            delete_column_data "$table" "$REPLY" "$dbname"
+                            PS3="$dbname> "
+                            display_table_menu "$dbname"
+                        else
+                            echo -e "\e[31mWarning:\e[0m invalid choice"
+                            display_select_menu "$table" "$dbname"
+                        fi
+                    done
+            fi
             ;;
-        3) display_table_menu "$dbname" ;;
+        3) 
+            if ! file_empty "$table"; then
+                    echo -e "\e[36mThere is no data in table "$table"\e[0m"
+                    read -p "Press (C/c) to continue: " choice
+                    case "$choice" in
+                    [cC])
+                        PS3="$dbname> "
+                        display_table_menu "$dbname"
+                        ;;
+                    *)
+                        echo "Exit...."
+                        exit
+                        ;;
+                    esac
+                else
+                    echo -e "\e[36mThese are the fileds in table "$table":\e[0m"
+                    fields=($(awk -F: 'NR==1 { gsub(":", "\t"); print }' "$table-metadata.txt"))
+                    echo -e "\e[36mChoose field:\e[0m"
+                    select field in "${fields[@]}"; do
+                        if [[ -n $field ]]; then
+                            read -p "Please enter the column value to get it's rows: " column_value
+                            #validation on column value
+                            if ! delete_row_data "$table" "$REPLY" "$column_value" "$dbname"; then
+                                echo -e "\e[31mWarning:\e[0m No data found"
+                                display_select_from_table_menu "$table" "$dbname"
+                            fi
+                            PS3="$dbname> "
+                            display_table_menu "$dbname"
+                        else
+                            echo -e "\e[31mWarning:\e[0m invalid choice"
+                            display_select_from_table_menu "$table" "$dbname"
+                        fi
+                    done
+                fi
+            ;;
+        4) display_table_menu "$dbname" ;;
         *) echo -e "\e[31mWarning:\e[0m invalid choice" ;;
         esac
     done
@@ -345,7 +405,7 @@ function display_create_table_menu {
             case $REPLY in
             1) types+="int:" ;;
             2) types+="string:" ;;
-            *) echo "Invalid choice" ;;
+            *) echo -e "\e[31mWarning:\e[0m invalid choice" ;;
             esac
             break
         done
@@ -354,7 +414,7 @@ function display_create_table_menu {
             1) constraints+="primary key:" ;;
             2) constraints+="unique:" ;;
             3) constraints+="not null:" ;;
-            *) echo "Invalid choice" ;;
+            *) echo -e "\e[31mWarning:\e[0m invalid choice" ;;
             esac
             break
         done

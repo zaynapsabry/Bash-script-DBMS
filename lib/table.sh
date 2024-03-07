@@ -10,7 +10,7 @@ select_all_table_data() {
         NR==1 { 
         gsub(":", "    ");
         printf color $0 reset "\n";
-     }' "$database_path/$dbname/$tablename"
+     }' "$tablename"
     # echo "$(head -n 1 "$tablename" | tr ':' '\t')"
 
     # Print data, align columns nicely
@@ -22,9 +22,9 @@ select_all_table_data() {
 # Function to select column data from the table
 select_column_data() {
     local tablename=$1
-    local column=$2
+    local field_number=$2
     local dbname=$3
-    awk -F: -v col="$column" ' NR>1 {print $col}' "$tablename"
+    awk -F: -v col="$field_number" ' NR>1 {print $col}' "$tablename"
     echo "$column"
     echo ""
 }
@@ -32,48 +32,78 @@ select_column_data() {
 # Function to select row data from the table
 select_row_data() {
     local tablename=$1
-    local column=$2
+    local field_number=$2
     local column_value=$3
     local dbname=$4
 
-    if validate_col_type_value_input "$column_value" "$tablename" "$column" "$dbname"; then
+    if validate_col_type_value_input "$column_value" "$tablename" "$field_number" "$dbname"; then
 
         # Use awk to iterate over each row in the file
-        awk -F: -v col="$column" -v val="$column_value" 'BEGIN{OFS="\t";FS=":"}{
-            if (NR == 1) {
-                for (i = 1; i <= NF; i++) {
-                    if ($i == col) {
-                        col_index = i
-                        break
-                    }
-                }
-            } else {
-                if ($(col_index) == val) {
-                    print_found=1
-                    print
-                }
+        awk -F: -v field="$field_number" -v val="$column_value" 'BEGIN{OFS="\t";FS=":"}{
+            if ($(field) == val) {
+                print_found=1
+                print
             }
         } END {
             if (!print_found) {
-                print "\e[31mNo data found\e[0m\n"
+                print "\033[31mWarning:\033[0m\nNo data found"
             }
-        }' "$tablename" | column -s: -t
+        }' "$tablename" 
         echo ""
         return 0
     else
         return 1
     fi
-
 }
+
 
 # Function to delete all data from the table
 delete_all_table_data() {
     local tablename=$1
     local dbname=$2
-    truncate --size 0 "$database_path/$dbname/$tablename"
+    truncate --size 0 "$tablename"
     echo -e "All data in "$tablename" deleted\e[32msuccessfully\e[0m."
     echo ""
 }
+
+# Function to delete column data from the table
+delete_column_data() {
+    local tablename=$1
+    local field_number=$2
+    local dbname=$3
+    # Use awk to print all columns except the specified one
+    awk -F: -v col="$field_number" 'NR==1 { for (i=1; i<=NF; i++) if (i != col) printf "%s:", $i; printf "\n"; next } { for (i=1; i<=NF; i++) if (i != col) printf "%s:", $i; printf "\n" }' "$tablename" > "$tablename.tmp" && mv "$tablename.tmp" "$tablename"
+    echo -e "All data in this column deleted \e[32msuccessfully\e[0m."
+}
+
+# Function to delete row data from the table
+delete_row_data() {
+    local tablename=$1
+    local field_number=$2
+    local column_value=$3
+    local dbname=$4
+
+    if validate_col_type_value_input "$column_value" "$tablename" "$field_number" "$dbname"; then
+
+        # Use awk to iterate over each row in the file
+        awk -F: -v field="$field_number" -v val="$column_value" 'BEGIN{OFS="\t";FS=":"}{
+            if ($(field) != val) {
+                print_found=1
+                print
+            }
+        } END {
+            if (!print_found) {
+                print "\033[31mWarning:\033[0m\nNo data found"
+            }
+        }' "$tablename" > "$tablename.tmp" && mv "$tablename.tmp" "$tablename"
+        echo -e "All rows with this value are deleted \e[32msuccessfully\e[0m."
+        echo ""
+        return 0
+    else
+        return 1
+    fi
+}
+
 
 # Create table function
 function create_table() {

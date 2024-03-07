@@ -76,29 +76,8 @@ function validate_num() {
     fi
 
 }
-# function validate_col_type_value_input {
-#     local col_value=$1
-#     local tablename=$2
-#     local column=$3
-#     local dbname=$4
 
-#     awk -F ':' -v col_value="$col_value" -v column="$column" '
-#     NR >= 1 {
-#         if ($2 == "int") {
-#             if (!($col_value ~ /^[0-9]+$/)) {
-#                 print "Invalid input for column", column, ": Expected integer value"
-#                 return 1
-#             }
-#         }
-#         if ($2 == "string") {
-#             if (!(col_value ~ /^[a-zA-Z0-9_]+$/) || col_value == "" || col ~ /[[:space:]]/) {
-#                 print "Invalid input for column", column, ": Expected non-empty string"
-#                 return 1
-#             }
-#         }
-#     }' "$tablename-metadata.txt"
-#     return 0
-# }
+
 function validate_col_type_value_input {
     local col_value=$1
     local tablename=$2
@@ -107,19 +86,18 @@ function validate_col_type_value_input {
 
     local col_type=$(awk -F: -v col="$column" '
         BEGIN { found=0 }
-        NR==1 {
-            for (i=1; i<=NF; i++) {
-                if ($i == col) {
-                    col_num=i
-                    found=1
-                    break
-                }
-            }
+        NR==2 {
+            split($0, types)
+            col_type = types[col]
+            found=1
         }
-        found==1 && NR==2 {
-            print $col_num
-            exit
+        END {
+            if (found == 1) {
+                print col_type
+            }
         }' "$tablename-metadata.txt")
+
+    # echo "$col_type"    
 
     if [[ -z "$col_type" ]]; then
         echo "Column '$column' not found in metadata."

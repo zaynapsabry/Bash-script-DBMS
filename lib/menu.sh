@@ -91,7 +91,7 @@ function display_main_menu {
             done
             ;;
         5) exit 0 ;;
-        *) cho -e "\e[31mWarning:\e[0m invalid choice" ;;
+        *) echo -e "\e[31mWarning:\e[0m invalid choice" ;;
         esac
     done
 }
@@ -178,7 +178,7 @@ function display_table_menu {
             display_main_menu
 
             ;;
-        *) echo "Invalid choice" ;;
+        *) echo -e "\e[31mWarning:\e[0m invalid choice" ;;
         esac
     done
 }
@@ -261,6 +261,7 @@ function display_select_from_table_menu {
                 select field in "${fields[@]}"; do
                     if [[ -n $field ]]; then
                         read -p "Please select the column value to get it's rows: " column_value
+                        #validation on column value
                         select_row_data "$table" "$column" "$column_value" "$dbname"
                         PS3="$dbname> "
                         display_table_menu "$dbname"
@@ -272,7 +273,7 @@ function display_select_from_table_menu {
             fi
             ;;
         4) display_table_menu "$dbname" ;;
-        *) echo "Invalid choice" ;;
+        *) echo -e "\e[31mWarning:\e[0m invalid choice" ;;
         esac
     done
 }
@@ -308,7 +309,7 @@ function display_delete_from_table_menu {
 
             ;;
         3) display_table_menu "$dbname" ;;
-        *) echo "Invalid choice" ;;
+        *) echo -e "\e[31mWarning:\e[0m invalid choice" ;;
         esac
     done
 }

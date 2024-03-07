@@ -17,6 +17,24 @@ function file_exists {
     fi
 }
 
+function file_empty {
+    if [ -s $1 ]; then
+        return 0 #true
+    else
+        return 1 #false
+    fi
+}
+
+function directory_empty {
+    if [ -z "$(ls -A $1)" ]; then
+        echo "dir is empty"
+        return 0 #true
+    else
+        echo "dir not empty"
+        return 1 #false
+    fi
+}
+
 function validate_name {
     local name=$1
     # Database name is empty #used "" to prevent issue with spacing

@@ -27,10 +27,10 @@ function createDB(){
 #--------------- function to list all database ----------------#
 
 function listDB(){
-    local databases = ""
+    local databases=""
     if [ -d "$database_path" ] && [ "$(ls -A "$database_path")" ];
     then
-        echo "These are the databases in the system:"
+        echo -e "\e[36mThese are the databases in the system:\e[0m"
         for db in $(ls "$database_path")
         do
             databases+="$(basename "$db") " 

@@ -24,8 +24,6 @@ function try-again() {
 
 #display the main menu
 function display_main_menu {
-    local dbs_drop=""
-    local dbs_connect=""
     clear
     echo -e "\e[36m--------------------- Welcome to ZSH DBMS --------------------\e[0m"
     echo " "
@@ -39,34 +37,55 @@ function display_main_menu {
                 fi
             ;;
             2)
-                echo "Listing existing databases"
                 listDB
             ;;
             3)
                 echo -e "\e[36mThese are the databases in the system:\e[0m"
-                for db in $(ls "$database_path"); do
-                    dbs_drop+="$(basename "$db")  "
+                echo -e "\e[36mChoose what you want to drop:\e[0m"
+                databases=($(ls "$database_path"))
+                select db in "${databases[@]}"; do
+                    if [[ -n $db ]]; then
+                        dropDB "$db"
+                        cd ../$database_path
+                        display_main_menu            
+                    else
+                        echo -e "\e[31mWarning:\e[0m invalid choice"
+                        read -p "Press (C/c) to continue: " choice
+                        case "$choice" in
+                            [cC])
+                                cd ../$database_path
+                                display_main_menu 
+                                ;;
+                            *)
+                                echo "Exit...."
+                                exit
+                                ;;
+                        esac
+                    fi
                 done
-                echo "$dbs_drop"
-                
-                read -p "Enter db name to drop: " name
-                if ! dropDB "$name"; then
-                    try-again "dropDB"
-                fi
             ;;
             4)
                 echo -e "\e[36mThese are the databases in the system:\e[0m"
-                for db in $(ls "$database_path"); do
-                    dbs_connect+="$(basename "$db")  "
+                echo -e "\e[36mChoose what you want to connect:\e[0m"
+                databases=($(ls "$database_path"))
+                select db in "${databases[@]}"; do
+                    if [[ -n $db ]]; then
+                        connect_to_db "$db"
+                        display_table_menu "$db"
+                    else
+                        echo -e "\e[31mWarning:\e[0m invalid choice"
+                        read -p "Press (C/c) to continue: " choice
+                        case "$choice" in
+                            [cC])
+                                connect_to_db "$db"
+                                ;;
+                            *)
+                                echo "Exit...."
+                                exit
+                                ;;
+                        esac
+                    fi
                 done
-                echo "$dbs_connect"
-                
-                read -p "Enter db name to connect: " name
-                if ! connect_to_db "$name"; then
-                    try-again "connect_to_db"
-                else
-                    display_table_menu "$name"
-                fi
             ;;
             5) exit 0 ;;
             *) echo "Invalid choice" ;;
@@ -76,34 +95,85 @@ function display_main_menu {
 
 function display_table_menu {
     local dbname=$1
-    local tables=""
-    select choice in "Create a new table" "List existing tables" "Drop a table" "Insert into a table" "Select from a table" "Exit"; do
+    select choice in "Create a new table" "List existing tables" "Drop a table" "Insert into a table" "Select from a table" "Delete from a table" "Update a table" "Exit"; do
         case $REPLY in
-            1)
+            1)  # Creating a table
                 display_create_table_menu "$dbname"
             ;;
-            2) echo "List existing tables" ;;
+            2)  # Listing table contents
+                if directory_empty "$PWD"; then
+                    echo -e "\e[36mThere is no tables in "$dbname" database\e[0m"
+                    read -p "Press (C/c) to continue: " choice
+                        case "$choice" in
+                            [cC])
+                                PS3="$dbname> "
+                                display_table_menu "$dbname"
+                                 
+                                ;;
+                            *)
+                                echo "Exit...."
+                                exit
+                                ;;
+                        esac 
+                else 
+                    echo -e "\e[36mThese are the tables in "$dbname" database\e[0m"
+                    ls
+                    echo ""
+                    PS3="$dbname> " 
+                    display_table_menu "$dbname"                  
+                fi 
+
+            ;;
             3) echo "Drop a table" ;;
             4) echo "Insert into a table" ;;
-            5)
-                # echo -e "\e[36mThese are the tables in $dbname:\e[0m"
-                # for table in $(ls "../$dbname")
-                # do
-                #     tables+="$(basename "$table")  "
-                # done
-                # echo "$tables"
-                
-                read -p "Enter table name you want to select from: " name
-                if ! file_exists "$name"; then
-                    echo -e "\e[31mWarning\e[0mThere is no table with this name"
-                    display_table_menu
-                else
-                    display_select_menu "$name" "$dbname"
-                fi
+            5)  # Select from a table
+                echo -e "\e[36mChoose a table to select from:\e[0m"
+                tables=($(ls "../$dbname"))
+                select table in "${tables[@]}"; do
+                    if [[ -n $table ]]; then
+                        display_select_from_table_menu "$table" "$dbname"
+                    else
+                        echo -e "\e[31mWarning:\e[0m invalid choice"
+                        read -p "Press (C/c) to continue: " choice
+                        case "$choice" in
+                            [cC])
+                                PS3="$dbname> " 
+                                display_table_menu "$dbname"
+                                ;;
+                            *)
+                                echo "Exit...."
+                                exit
+                                ;;
+                        esac    
+                    fi
+                done
             ;;
-            6) #exit to the main menu
-                
-                display_main_menu
+            6)  # Delete from a table
+                echo -e "\e[36mChoose a table to delete from:\e[0m"
+                tables=($(ls "../$dbname"))
+                select table in "${tables[@]}"; do
+                    if [[ -n $table ]]; then
+                        display_delete_from_table_menu "$table" "$dbname"
+                    else
+                        echo -e "\e[31mWarning:\e[0m invalid choice"
+                        read -p "Press (C/c) to continue: " choice
+                        case "$choice" in
+                            [cC])
+                                PS3="$dbname> " 
+                                display_table_menu "$dbname" 
+                                ;;
+                            *)
+                                echo "Exit...."
+                                exit
+                                ;;
+                        esac    
+                    fi
+                done
+            ;;
+            7) echo "Update a table" ;;
+            8)  
+                cd ../$database_path
+                display_main_menu   
                 
             ;;
             *) echo "Invalid choice" ;;
@@ -111,48 +181,131 @@ function display_table_menu {
     done
 }
 
-function display_select_menu {
+function display_select_from_table_menu {
     local table=$1
     local dbname=$2
-    PS3="Select from $2 Menu> "
-    select choice in "Select all" "Seclect column" "Select row" "Exit"; do
+    PS3="Select from table $table> "
+    select choice in "Select all" "Select column" "Select row" "Exit"; do
         case $REPLY in
             1)
-                select_all_data "$table"
-                display_select_menu "$table" "$dbname"
+                if ! file_empty "$table"; then 
+                    echo -e "\e[36mThere is no data in table "$table"\e[0m"
+                    read -p "Press (C/c) to continue: " choice
+                        case "$choice" in
+                            [cC])
+                                PS3="$dbname> " 
+                                display_table_menu "$dbname" 
+                                ;;
+                            *)
+                                echo "Exit...."
+                                exit
+                                ;;
+                        esac 
+                else 
+                    select_all_table_data "$table" "$dbname"
+                    PS3="$dbname> " 
+                    display_table_menu "$dbname" 
+                fi    
             ;;
-            2)
-                echo -e "\e[36mThese are the fileds in this table:\e[0m"
-                awk 'NR==1 { gsub(":", "\t"); print }' "$table"
-                
-                read -p "Enter column name you want to select: " column
-                if ! check_column_existence "$column" "$table"; then
-                    try-again "check_column_existence"
-                else
-                    select_column_data "$table" "$column"
-                    display_select_menu "$table" "$dbname"
+            2)            
+                if ! file_empty "$table"; then
+                    echo -e "\e[36mThere is no data in table "$table"\e[0m"
+                    read -p "Press (C/c) to continue: " choice
+                        case "$choice" in
+                            [cC])
+                                PS3="$dbname> " 
+                                display_table_menu "$dbname" 
+                                ;;
+                            *)
+                                echo "Exit...."
+                                exit
+                                ;;
+                        esac 
+                else 
+                    echo -e "\e[36mThese are the fileds in table "$table":\e[0m"
+                    fields=($(awk -F: 'NR==1 { gsub(":", "\t"); print }' "$table"))  
+                    echo -e "\e[36mChoose field:\e[0m"
+                    select field in "${fields[@]}"; do
+                        if [[ -n $field ]]; then
+                            echo -e "\e[36mThese are the data in $field\e[0m"
+                            select_column_data "$table" "$field" "$dbname"
+                            PS3="$dbname> " 
+                            display_table_menu "$dbname" 
+                        else
+                            echo -e "\e[31mWarning:\e[0m invalid choice"
+                            display_select_menu "$table" "$dbname"
+                        fi
+                    done
                 fi
             ;;
             3)
-                echo -e "\e[36mThese are the fileds in this table:\e[0m"
-                awk 'NR==1 { gsub(":", "\t"); print }' "$table"
-                
-                read -p "Enter column name you want to select: " column
-                if ! check_column_existence "$column" "$table"; then
-                    try-again "check_column_existence" "$table"
-                else
-                    read -p "Enter value you want to select: " column_value
-                    select_row_data "$table" "$column" "$column_value"
-                    display_select_menu "$table" "$dbname"
-                    # if ! check_column_value_existence "$column_value" "$table" "$column" ; then
-                    #     try-again "check_column_value_existence" "$table" "$column"
-                    # else
-                    #     select_row_data "$table" "$column" "$column_value"
-                    #     display_select_menu "$table" "$dbname"
-                    # fi
-                fi
+                if ! file_empty "$table"; then 
+                    echo -e "\e[36mThere is no data in table "$table"\e[0m"
+                    read -p "Press (C/c) to continue: " choice
+                        case "$choice" in
+                            [cC])
+                                PS3="$dbname> " 
+                                display_table_menu "$dbname" 
+                                ;;
+                            *)
+                                echo "Exit...."
+                                exit
+                                ;;
+                        esac 
+                else 
+                    echo -e "\e[36mThese are the fileds in table "$table":\e[0m"
+                    fields=($(awk -F: 'NR==1 { gsub(":", "\t"); print }' "$table"))
+                    echo -e "\e[36mChoose field:\e[0m"
+                    select field in "${fields[@]}"; do
+                        if [[ -n $field ]]; then
+                            read -p "Please select the column value to get it's rows: " column_value
+                            select_row_data "$table" "$column" "$column_value" "$dbname"
+                            PS3="$dbname> " 
+                            display_table_menu "$dbname"
+                        else
+                            echo -e "\e[31mWarning:\e[0m invalid choice"
+                            display_select_menu "$table" "$dbname"
+                        fi
+                    done
+                fi    
             ;;
-            4) display_table_menu ;;
+            4) display_table_menu "$dbname";;
+            *) echo "Invalid choice" ;;
+        esac
+    done
+}
+
+function display_delete_from_table_menu {
+    local table=$1
+    local dbname=$2
+    PS3="Delete from table $table> "
+    select choice in "Delete all" "Delete row" "Exit"; do
+        case $REPLY in
+            1)
+                if ! file_empty "$table"; then 
+                    echo -e "\e[36mThere is no data in table "$table"\e[0m"
+                    read -p "Press (C/c) to continue: " choice
+                        case "$choice" in
+                            [cC])
+                                PS3="$dbname> " 
+                                display_table_menu "$dbname" 
+                                ;;
+                            *)
+                                echo "Exit...."
+                                exit
+                                ;;
+                        esac 
+                else 
+                    delete_all_table_data "$table" "$dbname"
+                    PS3="$dbname> " 
+                    display_table_menu "$dbname" 
+                fi    
+            ;;
+            2)
+                echo "Delete rows"
+                
+            ;;
+            3) display_table_menu "$dbname";;
             *) echo "Invalid choice" ;;
         esac
     done
@@ -198,8 +351,7 @@ function display_create_table_menu {
             break
         done
     done
-    create_table "$name" "$column_names" "$types" "$constraints" "$dbname"
-    
+    create_table "$name" "$column_names" "$types" "$constraints" "$dbname"    
 }
 
 

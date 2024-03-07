@@ -115,3 +115,31 @@ check_column_value_existence() {
         echo -e "\e[36mValue '$column_value' does not exist in column '$column'\e[0m "
     fi
 }
+
+
+# ------------------------- create_table function -------------------------#
+function create_table() {
+    local tablename=$1
+    local dbname=$2
+    local -n column_names=$3 2>> /dev/null
+    local -n types=$4 2>> /dev/null
+    local -n constraints=$5  2>> /dev/null
+
+    if file_exists "$database_path/$dbname/$tablename"; then
+        echo "Table '$tablename' already exists."
+        return 1
+    fi
+
+    # Create the table file
+    touch "$tablename"
+    touch "$tablename-metadata.txt"
+
+    # Add the columns to the table
+    for ((i = 0; i < ${#column_names[@]}; i++)); do
+        printf "%s:%s:%s\n" "${column_names[$i]}" "${types[$i]}" "${constraints[$i]}" >>"$tablename-metadata.txt"
+    done
+
+    echo "Table '$tablename' created successfully."
+
+}
+

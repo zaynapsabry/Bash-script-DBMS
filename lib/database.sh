@@ -66,9 +66,7 @@ function dropDB(){
 
 function connect_to_db {
     local db_name=$1
-    if ! validate_name "$db_name"; then
-        return 1
-    fi
+   
     if ! directory_exists $database_path/$db_name; then
         echo -e "\e[31mWarning\e[0m: Database does not exist"
         return 1

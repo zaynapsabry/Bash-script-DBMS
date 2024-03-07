@@ -262,7 +262,7 @@ function display_select_from_table_menu {
                     if [[ -n $field ]]; then
                         read -p "Please select the column value to get it's rows: " column_value
                         #validation on column value
-                        select_row_data "$table" "$column" "$column_value" "$dbname"
+                        select_row_data "$table" "$field" "$column_value" "$dbname"
                         PS3="$dbname> "
                         display_table_menu "$dbname"
                     else

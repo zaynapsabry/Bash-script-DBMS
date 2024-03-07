@@ -36,8 +36,9 @@ select_row_data() {
     local column_value=$3
     local dbname=$4
 
+    head -n 1 "$tablename" | tr ':' "  "
     # Use awk to iterate over each row in the file
-    awk -F: -v col="$column" -v val="$column_value" '{
+    awk -F: -v col="$column" -v val="$column_value" 'BEGIN{OFS="\t";FS=":"}{
         if (NR == 1) {
             for (i = 1; i <= NF; i++) {
                 if ($i == col) {
@@ -50,7 +51,8 @@ select_row_data() {
                 print
             }
         }
-    }' "$database_path/$dbname/$tablename"
+    }' "$tablename"  | column -s: -t
+    echo ""
 }
 
 # Function to delete all data from the table

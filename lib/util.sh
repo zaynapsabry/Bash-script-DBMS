@@ -10,7 +10,7 @@ function directory_exists {
 }
 
 function file_exists {
-    if [ -f $1 ]; then
+    if [ -f "$1" ]; then
         return 0 #true
     else
         return 1 #false
@@ -18,7 +18,7 @@ function file_exists {
 }
 
 function file_empty {
-    if [ -s $1 ]; then
+    if [ -s "$1" ]; then
         return 0 #true
     else
         return 1 #false
@@ -26,7 +26,7 @@ function file_empty {
 }
 
 function directory_empty {
-    if [ -z "$(ls -A $1)" ]; then
+    if [ -z "$(ls -A "$1")" ]; then
         echo "dir is empty"
         return 0 #true
     else
@@ -82,7 +82,7 @@ function validate_col_type_value_input {
     local col_value=$1
     local tablename=$2
     local column=$3
-    local dbname=$4
+    # local dbname=$4
 
     local col_type=$(awk -F: -v col="$column" '
         BEGIN { found=0 }

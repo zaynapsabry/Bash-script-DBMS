@@ -48,14 +48,13 @@ select_row_data() {
             if (!print_found) {
                 print "\033[31mWarning:\033[0m\nNo data found"
             }
-        }' "$tablename" 
+        }' "$tablename"
         echo ""
         return 0
     else
         return 1
     fi
 }
-
 
 # Function to delete all data from the table
 delete_all_table_data() {
@@ -73,15 +72,15 @@ delete_column_data() {
     local dbname=$3
     local pk_number=$4
     # Use awk to print all columns except the specified one
-    if [[ $field_number == $pk_number ]]; then 
+    if [[ $field_number == $pk_number ]]; then
         echo -e "\e[31mWarning: \e[0mColumn "$pk_number" is the primary key you can't delete it"
         echo ""
-    else  
-        awk -F: -v col="$field_number" 'NR==1 { for (i=1; i<=NF; i++) if (i != col) { printf "%s:", $i } printf "\n"; next } { for (i=1; i<=NF; i++) { if (i != col) printf "%s:", $i } printf "\n" }' "$tablename" > "$tablename.tmp" && mv "$tablename.tmp" "$tablename"
-        # awk -F: -v col="$field_number" 'NR==1 { for (i=1; i<=NF; i++) if (i != col) printf "%s:", $i; printf "\n"; next } { for (i=1; i<=NF; i++) if (i != col) printf "%s:", $i; printf "\n" }' "$tablename" > "$tablename.tmp" && mv "$tablename.tmp" "$tablename"
+    else
+        awk -v field="$field_number" 'BEGIN{FS=OFS=":"} {$field=""; $1=$1; print}' "$tablename" > "$tablename.tmp" && mv "$tablename.tmp" "$tablename"
+
         echo -e "All data in this column deleted \e[32msuccessfully\e[0m."
         echo ""
-    fi    
+    fi
 }
 
 # Function to delete row data from the table
@@ -103,7 +102,7 @@ delete_row_data() {
             if (!print_found) {
                 print "\033[31mWarning:\033[0m\nNo data found"
             }
-        }' "$tablename" > "$tablename.tmp" && mv "$tablename.tmp" "$tablename"
+        }' "$tablename" >"$tablename.tmp" && mv "$tablename.tmp" "$tablename"
         echo -e "All rows with this value are deleted \e[32msuccessfully\e[0m."
         echo ""
         return 0
@@ -111,7 +110,6 @@ delete_row_data() {
         return 1
     fi
 }
-
 
 # Function to check if a column exists in the header
 check_column_existence() {
@@ -153,7 +151,6 @@ function create_table() {
         return 1
     fi
 
-    
     metadata_file=".$tablename-metadata.txt"
     # Create the table file
     touch "$tablename"
@@ -161,23 +158,23 @@ function create_table() {
 
     # Add the columns to the table
     for ((i = 0; i < ${#column_names[@]}; i++)); do
-        printf "%s" "${column_names[$i]}" >> $metadata_file
+        printf "%s" "${column_names[$i]}" >>$metadata_file
         if ((i < ${#column_names[@]} - 1)); then
-            printf ":" >> $metadata_file
+            printf ":" >>$metadata_file
         fi
     done
-    echo "" >> $metadata_file
+    echo "" >>$metadata_file
     for ((i = 0; i < ${#types[@]}; i++)); do
-        printf "%s" "${types[$i]}" >> $metadata_file
+        printf "%s" "${types[$i]}" >>$metadata_file
         if ((i < ${#column_names[@]} - 1)); then
-            printf ":" >> $metadata_file
+            printf ":" >>$metadata_file
         fi
     done
-    echo "" >> $metadata_file
+    echo "" >>$metadata_file
     for ((i = 0; i < ${#constraints[@]}; i++)); do
-        printf "%s" "${constraints[$i]}" >> $metadata_file
+        printf "%s" "${constraints[$i]}" >>$metadata_file
         if ((i < ${#column_names[@]} - 1)); then
-            printf ":" >> $metadata_file
+            printf ":" >>$metadata_file
         fi
     done
 

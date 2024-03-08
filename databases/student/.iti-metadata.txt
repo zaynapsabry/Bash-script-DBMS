@@ -1,3 +1,3 @@
-name:id:age
-string:int:int
-notnull:primarykey:none
+name:id:age:email
+string:int:int:string
+notnull:primarykey:none:none

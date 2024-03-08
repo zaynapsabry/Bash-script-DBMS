@@ -1,0 +1,3 @@
+name:id:age
+string:int:int
+notnull:primarykey:none

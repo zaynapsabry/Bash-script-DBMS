@@ -22,11 +22,13 @@ function try-again() {
     esac
 }
 
+
 #display the main menu
 function display_main_menu {
     clear
+    initiate_databases
     cd ../$database_path 2>>/dev/null
-    
+
     # Draw DBMS in ASCII art
     echo -e "\e[36m zz zz zz     ss ss ss     zz        zz    ss ss ss   \e[0m"
     echo -e "\e[36m zz      zz   ss      ss   zz zz  zz zz  ss           \e[0m   "
@@ -49,84 +51,95 @@ function display_main_menu {
             listDB
             ;;
         3)
-            echo -e "\e[36mThese are the databases in the system:\e[0m"
-            echo -e "\e[36mChoose what you want to drop:\e[0m"
-            databases=($(ls "$database_path"))
-            select db in "${databases[@]}"; do
-                if [[ -n $db ]]; then
-                    dropDB "$db"
-
-                    display_main_menu
-                else
-                    echo -e "\e[31mWarning:\e[0m invalid choice"
-                    read -p "Press (C/c) to continue: " choice
-                    case "$choice" in
-                    [cC])
+            if ! directory_empty $database_path; then
+                echo -e "\e[36mThese are the databases in the system:\e[0m"
+                echo -e "\e[36mChoose what you want to drop:\e[0m"
+                databases=($(ls "$database_path"))
+                select db in "${databases[@]}"; do
+                    if [[ -n $db ]]; then
+                        dropDB "$db"
 
                         display_main_menu
-                        ;;
-                    *)
-                        echo "Exit...."
-                        exit
-                        ;;
-                    esac
-                fi
-            done
+                    else
+                        echo -e "\e[31mWarning:\e[0m invalid choice"
+                        read -p "Press (C/c) to continue: " choice
+                        case "$choice" in
+                        [cC])
+
+                            display_main_menu
+                            ;;
+                        *)
+                            echo "Exit...."
+                            exit
+                            ;;
+                        esac
+                    fi
+                done
+            else
+                echo -e "\e[31mWarning:\e[0m There ara no databases in the system"
+            fi    
             ;;
         4)
-            echo -e "\e[36mThese are the databases in the system:\e[0m"
-            echo -e "\e[36mChoose what you want to connect:\e[0m"
-            databases=($(ls "$database_path"))
-            select db in "${databases[@]}"; do
-                if [[ -n $db ]]; then
-                    connect_to_db "$db"
-                    display_table_menu "$db"
-                else
-                    echo -e "\e[31mWarning:\e[0m invalid choice"
-                    read -p "Press (C/c) to continue: " choice
-                    case "$choice" in
-                    [cC])
-                        cd ../$database_path
-                        display_main_menu
+            if ! directory_empty $database_path; then
+                echo -e "\e[36mThese are the databases in the system:\e[0m"
+                echo -e "\e[36mChoose what you want to connect:\e[0m"
+                databases=($(ls "$database_path"))
+                select db in "${databases[@]}"; do
+                    if [[ -n $db ]]; then
+                        connect_to_db "$db"
+                        display_table_menu "$db"
+                    else
+                        echo -e "\e[31mWarning:\e[0m invalid choice"
+                        read -p "Press (C/c) to continue: " choice
+                        case "$choice" in
+                        [cC])
+                            cd ../$database_path
+                            display_main_menu
 
-                        ;;
-                    *)
-                        echo "Exit...."
-                        exit
-                        ;;
-                    esac
-                fi
-            done
+                            ;;
+                        *)
+                            echo "Exit...."
+                            exit
+                            ;;
+                        esac
+                    fi
+                done
+            else
+                echo -e "\e[31mWarning:\e[0m There ara no databases in the system"
+            fi      
             ;;
         5) 
-            echo -e "\e[36mThese are the databases in the system:\e[0m"
-            echo -e "\e[36mChoose what you want to rename:\e[0m"
-            databases=($(ls "$database_path"))
-            select db in "${databases[@]}"; do
-                if [[ -n $db ]]; then
-                    valid=1
-                    while [ $valid -eq 1 ]; do
-                        read -p "Enter new name: " new_name
-                        if renameDB "$db" "$new_name"; then
-                            valid=0
-                        fi
-                    done
-                    display_main_menu
-                else
-                    echo -e "\e[31mWarning:\e[0m invalid choice"
-                    read -p "Press (C/c) to continue: " choice
-                    case "$choice" in
-                    [cC])
+            if ! directory_empty $database_path; then
+                echo -e "\e[36mThese are the databases in the system:\e[0m"
+                echo -e "\e[36mChoose what you want to rename:\e[0m"
+                databases=($(ls "$database_path"))
+                select db in "${databases[@]}"; do
+                    if [[ -n $db ]]; then
+                        valid=1
+                        while [ $valid -eq 1 ]; do
+                            read -p "Enter new name: " new_name
+                            if renameDB "$db" "$new_name"; then
+                                valid=0
+                            fi
+                        done
                         display_main_menu
-                        ;;
-                    *)
-                        echo "Exit...."
-                        exit
-                        ;;
-                    esac
-                fi
-            done
-            
+                    else
+                        echo -e "\e[31mWarning:\e[0m invalid choice"
+                        read -p "Press (C/c) to continue: " choice
+                        case "$choice" in
+                        [cC])
+                            display_main_menu
+                            ;;
+                        *)
+                            echo "Exit...."
+                            exit
+                            ;;
+                        esac
+                    fi
+                done
+            else
+                echo -e "\e[31mWarning:\e[0m There ara no databases in the system"
+            fi  
         ;;
         6) exit 0 ;;
         *) echo -e "\e[31mWarning:\e[0m invalid choice" ;;
@@ -140,6 +153,7 @@ function display_table_menu {
         case $REPLY in
         1) # Creating a table
             display_create_table_menu "$dbname"
+            display_table_menu "$dbname"
             ;;
         2) # Listing table contents
             if directory_empty "$PWD"; then
@@ -157,10 +171,10 @@ function display_table_menu {
                     ;;
                 esac
             else
-                echo -e "\e[36mThese are the tables in "$dbname" database\e[0m"
-                ls
-                echo ""
-                PS3="$dbname> "
+                    echo -e "\e[36mThese are the tables in "$dbname" database\e[0m"
+                    ls
+                    echo ""
+                    PS3="$dbname> "
                 display_table_menu "$dbname"
             fi
 
@@ -286,7 +300,7 @@ function display_select_from_table_menu {
                 esac
             else
                 echo -e "\e[36mThese are the fileds in table "$table":\e[0m"
-                fields=($(awk -F: 'NR==1 { gsub(":", "\t"); print }' "$table-metadata.txt"))
+                fields=($(awk -F: 'NR==1 { gsub(":", "\t"); print }' ".$table-metadata.txt"))
                 echo -e "\e[36mChoose field:\e[0m"
                     select field in "${fields[@]}"; do
                         if [[ -n $field ]]; then
@@ -317,7 +331,7 @@ function display_select_from_table_menu {
                 esac
             else
                 echo -e "\e[36mThese are the fileds in table "$table":\e[0m"
-                fields=($(awk -F: 'NR==1 { gsub(":", "\t"); print }' "$table-metadata.txt"))
+                fields=($(awk -F: 'NR==1 { gsub(":", "\t"); print }' ".$table-metadata.txt"))
                 echo -e "\e[36mChoose field:\e[0m"
                 select field in "${fields[@]}"; do
                     if [[ -n $field ]]; then
@@ -384,12 +398,15 @@ function display_delete_from_table_menu {
                 esac
             else
                 echo -e "\e[36mThese are the fileds in table "$table":\e[0m"
-                fields=($(awk -F: 'NR==1 { gsub(":", "\t"); print }' "$table-metadata.txt"))
+                fields=($(awk -F: 'NR==1 { gsub(":", "\t"); print }' ".$table-metadata.txt"))
+
+                pk_field_number=$(get_primary_key_number "$table")
+                # echo "$pk_field_number"
+
                 echo -e "\e[36mChoose field:\e[0m"
                     select field in "${fields[@]}"; do
                         if [[ -n $field ]]; then
-                            echo -e "\e[36mThese are the data in $field\e[0m"
-                            delete_column_data "$table" "$REPLY" "$dbname"
+                            delete_column_data "$table" "$REPLY" "$dbname" "$pk_field_number"
                             PS3="$dbname> "
                             display_table_menu "$dbname"
                         else
@@ -415,7 +432,7 @@ function display_delete_from_table_menu {
                     esac
                 else
                     echo -e "\e[36mThese are the fileds in table "$table":\e[0m"
-                    fields=($(awk -F: 'NR==1 { gsub(":", "\t"); print }' "$table-metadata.txt"))
+                    fields=($(awk -F: 'NR==1 { gsub(":", "\t"); print }' ".$table-metadata.txt"))
                     echo -e "\e[36mChoose field:\e[0m"
                     select field in "${fields[@]}"; do
                         if [[ -n $field ]]; then

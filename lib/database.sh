@@ -3,6 +3,14 @@ source ../lib/util.sh
 
 # database_path="../databases"
 
+function initiate_databases(){
+    if ! directory_exists $database_path; then
+        mkdir "$database_path"
+        echo "dbs"
+    fi     
+}
+
+
 #--------------- function to create a database ----------------#
 
 function createDB(){

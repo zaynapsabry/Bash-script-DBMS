@@ -27,10 +27,10 @@ function file_empty {
 
 function directory_empty {
     if [ -z "$(ls -A "$1")" ]; then
-        echo "dir is empty"
+        # echo "dir is empty"
         return 0 #true
     else
-        echo "dir not empty"
+        # echo "dir not empty"
         return 1 #false
     fi
 }
@@ -95,7 +95,7 @@ function validate_col_type_value_input {
             if (found == 1) {
                 print col_type
             }
-        }' "$tablename-metadata.txt")
+        }' ".$tablename-metadata.txt")
 
     # echo "$col_type"    
 
@@ -117,3 +117,28 @@ function validate_col_type_value_input {
     fi
     return 0
 }
+
+function get_primary_key_number {
+    local tablename=$1
+
+    local pk_field_number=$(awk -F: '
+        BEGIN { found=0 }
+        NR==3 {
+            split($0, primary_keys)
+            for (i = 1; i <= NF; i++) {
+                if (primary_keys[i] == "primarykey") {
+                    pk_field_number = i
+                    found = 1
+                    break
+                }
+            }
+        }
+        END {
+            if (found == 1) {
+                print pk_field_number
+            }
+        }' ".$tablename-metadata.txt")
+    echo "$pk_field_number"    
+}
+
+

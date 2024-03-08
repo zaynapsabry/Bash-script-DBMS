@@ -71,9 +71,17 @@ delete_column_data() {
     local tablename=$1
     local field_number=$2
     local dbname=$3
+    local pk_number=$4
     # Use awk to print all columns except the specified one
-    awk -F: -v col="$field_number" 'NR==1 { for (i=1; i<=NF; i++) if (i != col) printf "%s:", $i; printf "\n"; next } { for (i=1; i<=NF; i++) if (i != col) printf "%s:", $i; printf "\n" }' "$tablename" > "$tablename.tmp" && mv "$tablename.tmp" "$tablename"
-    echo -e "All data in this column deleted \e[32msuccessfully\e[0m."
+    if [[ $field_number == $pk_number ]]; then 
+        echo -e "\e[31mWarning: \e[0mColumn "$pk_number" is the primary key you can't delete it"
+        echo ""
+    else  
+        awk -F: -v col="$field_number" 'NR==1 { for (i=1; i<=NF; i++) if (i != col) { printf "%s:", $i } printf "\n"; next } { for (i=1; i<=NF; i++) { if (i != col) printf "%s:", $i } printf "\n" }' "$tablename" > "$tablename.tmp" && mv "$tablename.tmp" "$tablename"
+        # awk -F: -v col="$field_number" 'NR==1 { for (i=1; i<=NF; i++) if (i != col) printf "%s:", $i; printf "\n"; next } { for (i=1; i<=NF; i++) if (i != col) printf "%s:", $i; printf "\n" }' "$tablename" > "$tablename.tmp" && mv "$tablename.tmp" "$tablename"
+        echo -e "All data in this column deleted \e[32msuccessfully\e[0m."
+        echo ""
+    fi    
 }
 
 # Function to delete row data from the table
@@ -104,32 +112,6 @@ delete_row_data() {
     fi
 }
 
-
-# Create table function
-function create_table() {
-    local tablename=$1
-    local column_names=$2
-    local types=$3
-    local constraints=$4
-    local dbname=$5
-
-    if file_exists "$database_path/$dbname/$tablename"; then
-        echo -e "\e[31mWarning:\e[0m Table '$tablename' already exists."
-        return 1
-    fi
-
-    # Create the table file
-    touch "$tablename"
-    touch "$tablename-metadata.txt"
-
-    # Add the columns to the table
-    for ((i = 0; i < ${#column_names[@]}; i++)); do
-        echo "  ${column_names[$i]}:${types[$i]}:${constraints[$i]}" >>"$tablename-metadata.txt"
-    done
-
-    echo -e "Table '$tablename' created s\e[32msuccessfully\e[0m."
-
-}
 
 # Function to check if a column exists in the header
 check_column_existence() {
@@ -199,8 +181,8 @@ function create_table() {
         fi
     done
 
-    echo "Table '$tablename' created successfully."
-
+    echo -e "Table '$tablename' created \e[32msuccessfully\e[0m."
+    echo ""
 }
 
 # Function to drop a table

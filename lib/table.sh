@@ -171,29 +171,31 @@ function create_table() {
         return 1
     fi
 
+    
+    metadata_file=".$tablename-metadata.txt"
     # Create the table file
     touch "$tablename"
-    touch "$tablename-metadata.txt"
+    touch $metadata_file
 
     # Add the columns to the table
     for ((i = 0; i < ${#column_names[@]}; i++)); do
-        printf "%s" "${column_names[$i]}" >>"$tablename-metadata.txt"
+        printf "%s" "${column_names[$i]}" >> $metadata_file
         if ((i < ${#column_names[@]} - 1)); then
-            printf ":" >>"$tablename-metadata.txt"
+            printf ":" >> $metadata_file
         fi
     done
-    echo "" >>"$tablename-metadata.txt"
+    echo "" >> $metadata_file
     for ((i = 0; i < ${#types[@]}; i++)); do
-        printf "%s" "${types[$i]}" >>"$tablename-metadata.txt"
+        printf "%s" "${types[$i]}" >> $metadata_file
         if ((i < ${#column_names[@]} - 1)); then
-            printf ":" >>"$tablename-metadata.txt"
+            printf ":" >> $metadata_file
         fi
     done
-    echo "" >>"$tablename-metadata.txt"
+    echo "" >> $metadata_file
     for ((i = 0; i < ${#constraints[@]}; i++)); do
-        printf "%s" "${constraints[$i]}" >>"$tablename-metadata.txt"
+        printf "%s" "${constraints[$i]}" >> $metadata_file
         if ((i < ${#column_names[@]} - 1)); then
-            printf ":" >>"$tablename-metadata.txt"
+            printf ":" >> $metadata_file
         fi
     done
 
@@ -208,7 +210,7 @@ function drop_table() {
 
     if file_exists "$tablename"; then
         rm "$tablename"
-        rm "$tablename-metadata.txt"
+        rm ".$tablename-metadata.txt"
         echo -e "Table '$tablename' dropped \e[32msuccessfully\e[0m."
     else
         echo -e "\e[31mError\e[0m: Table '$tablename' doesn't exist."

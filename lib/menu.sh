@@ -26,7 +26,15 @@ function try-again() {
 function display_main_menu {
     clear
     cd ../$database_path 2>>/dev/null
-    echo -e "\e[36m--------------------- Welcome to ZSH DBMS --------------------\e[0m"
+    
+    # Draw DBMS in ASCII art
+    echo -e "\e[36m zz zz zz     ss ss ss     zz        zz    ss ss ss   \e[0m"
+    echo -e "\e[36m zz      zz   ss      ss   zz zz  zz zz  ss           \e[0m   "
+    echo -e "\e[36m zz       zz  ss ss ss     zz   zz   zz    ss ss ss   \e[0m "
+    echo -e "\e[36m zz      zz   ss      ss   zz        zz            ss \e[0m"
+    echo -e "\e[36m zz zz zz     ss ss ss     zz        zz    ss ss ss   \e[0m "
+
+
     echo " "
     PS3="Main Menu> "
     select choice in "Create a new database" "List existing databases" "Drop a database" "Connect to a database" "Rename DB" "Exit"; do

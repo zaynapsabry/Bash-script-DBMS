@@ -22,7 +22,6 @@ function try-again() {
     esac
 }
 
-
 #display the main menu
 function display_main_menu {
     clear
@@ -35,7 +34,6 @@ function display_main_menu {
     echo -e "\e[36m zz       zz  ss ss ss     zz   zz   zz    ss ss ss   \e[0m "
     echo -e "\e[36m zz      zz   ss      ss   zz        zz            ss \e[0m"
     echo -e "\e[36m zz zz zz     ss ss ss     zz        zz    ss ss ss   \e[0m "
-
 
     echo " "
     PS3="Main Menu> "
@@ -77,7 +75,7 @@ function display_main_menu {
                 done
             else
                 echo -e "\e[31mWarning:\e[0m There ara no databases in the system"
-            fi    
+            fi
             ;;
         4)
             if ! directory_empty $database_path; then
@@ -106,9 +104,9 @@ function display_main_menu {
                 done
             else
                 echo -e "\e[31mWarning:\e[0m There ara no databases in the system"
-            fi      
+            fi
             ;;
-        5) 
+        5)
             if ! directory_empty $database_path; then
                 echo -e "\e[36mThese are the databases in the system:\e[0m"
                 echo -e "\e[36mChoose what you want to rename:\e[0m"
@@ -139,8 +137,8 @@ function display_main_menu {
                 done
             else
                 echo -e "\e[31mWarning:\e[0m There ara no databases in the system"
-            fi  
-        ;;
+            fi
+            ;;
         6) exit 0 ;;
         *) echo -e "\e[31mWarning:\e[0m invalid choice" ;;
         esac
@@ -171,15 +169,15 @@ function display_table_menu {
                     ;;
                 esac
             else
-                    echo -e "\e[36mThese are the tables in "$dbname" database\e[0m"
-                    ls
-                    echo ""
-                    PS3="$dbname> "
+                echo -e "\e[36mThese are the tables in "$dbname" database\e[0m"
+                ls
+                echo ""
+                PS3="$dbname> "
                 display_table_menu "$dbname"
             fi
 
             ;;
-        3) 
+        3)
             echo -e "\e[36mChoose a table to drop:\e[0m"
             tables=($(ls "../$dbname"))
             select table in "${tables[@]}"; do
@@ -202,8 +200,53 @@ function display_table_menu {
                     esac
                 fi
             done
-        ;;
-        4) echo "Insert into a table" ;;
+            ;;
+        4)
+            echo -e "\e[36mChoose a table to insert into:\e[0m"
+            tables=($(ls "../$dbname"))
+            select table in "${tables[@]}"; do
+                if [[ -n $table ]]; then
+                    fields=($(awk -F: 'NR==1 { gsub(":", "\t"); print }' ".$table-metadata.txt"))
+                    pk_field_number=$(get_primary_key_number "$table")
+
+                    echo -e "\e[36mThese are the fields in table $table:\e[0m"
+                    echo "${fields[@]}"
+                    echo -e "The primary key field is: ${fields[$pk_field_number - 1]}"
+
+                    # Read values for each field
+                    # declare -a values # Declare an empty array to store values
+                    # for ((i = 0; i < ${#fields[@]}; i++)); do
+                    #     read -p "Enter ${fields[$i]}: " value
+                    #     values+=("$value")
+                    # done
+
+                    # Debugging output
+                    # echo "Values: ${values[@]}"
+                    echo "Fields: ${fields[@]}"
+
+                    # Call the insert_into_table function with arrays passed as arguments
+                    insert_into_table "$table" "$dbname" "${fields[*]}"
+
+                    # insert_into_table "$table" "$dbname" "${fields[@]}"
+
+                    PS3="$dbname> "
+                    display_table_menu "$dbname"
+                else
+                    echo -e "\e[31mWarning:\e[0m invalid choice"
+                    read -p "Press (C/c) to continue: " choice
+                    case "$choice" in
+                    [cC])
+                        PS3="$dbname> "
+                        display_table_menu "$dbname"
+                        ;;
+                    *)
+                        echo "Exit...."
+                        exit
+                        ;;
+                    esac
+                fi
+            done
+            ;;
         5) # Select from a table
             echo -e "\e[36mChoose a table to select from:\e[0m"
             tables=($(ls "../$dbname"))
@@ -302,17 +345,17 @@ function display_select_from_table_menu {
                 echo -e "\e[36mThese are the fileds in table "$table":\e[0m"
                 fields=($(awk -F: 'NR==1 { gsub(":", "\t"); print }' ".$table-metadata.txt"))
                 echo -e "\e[36mChoose field:\e[0m"
-                    select field in "${fields[@]}"; do
-                        if [[ -n $field ]]; then
-                            echo -e "\e[36mThese are the data in $field\e[0m"
-                            select_column_data "$table" "$REPLY" "$dbname"
-                            PS3="$dbname> "
-                            display_table_menu "$dbname"
-                        else
-                            echo -e "\e[31mWarning:\e[0m invalid choice"
-                            display_select_menu "$table" "$dbname"
-                        fi
-                    done
+                select field in "${fields[@]}"; do
+                    if [[ -n $field ]]; then
+                        echo -e "\e[36mThese are the data in $field\e[0m"
+                        select_column_data "$table" "$REPLY" "$dbname"
+                        PS3="$dbname> "
+                        display_table_menu "$dbname"
+                    else
+                        echo -e "\e[31mWarning:\e[0m invalid choice"
+                        display_select_menu "$table" "$dbname"
+                    fi
+                done
             fi
             ;;
         3)
@@ -404,52 +447,52 @@ function display_delete_from_table_menu {
                 # echo "$pk_field_number"
 
                 echo -e "\e[36mChoose field:\e[0m"
-                    select field in "${fields[@]}"; do
-                        if [[ -n $field ]]; then
-                            delete_column_data "$table" "$REPLY" "$dbname" "$pk_field_number"
-                            PS3="$dbname> "
-                            display_table_menu "$dbname"
-                        else
-                            echo -e "\e[31mWarning:\e[0m invalid choice"
-                            display_select_menu "$table" "$dbname"
-                        fi
-                    done
-            fi
-            ;;
-        3) 
-            if ! file_empty "$table"; then
-                    echo -e "\e[36mThere is no data in table "$table"\e[0m"
-                    read -p "Press (C/c) to continue: " choice
-                    case "$choice" in
-                    [cC])
+                select field in "${fields[@]}"; do
+                    if [[ -n $field ]]; then
+                        delete_column_data "$table" "$REPLY" "$dbname" "$pk_field_number"
                         PS3="$dbname> "
                         display_table_menu "$dbname"
-                        ;;
-                    *)
-                        echo "Exit...."
-                        exit
-                        ;;
-                    esac
-                else
-                    echo -e "\e[36mThese are the fileds in table "$table":\e[0m"
-                    fields=($(awk -F: 'NR==1 { gsub(":", "\t"); print }' ".$table-metadata.txt"))
-                    echo -e "\e[36mChoose field:\e[0m"
-                    select field in "${fields[@]}"; do
-                        if [[ -n $field ]]; then
-                            read -p "Please enter the column value to get it's rows: " column_value
-                            #validation on column value
-                            if ! delete_row_data "$table" "$REPLY" "$column_value" "$dbname"; then
-                                echo -e "\e[31mWarning:\e[0m No data found"
-                                display_select_from_table_menu "$table" "$dbname"
-                            fi
-                            PS3="$dbname> "
-                            display_table_menu "$dbname"
-                        else
-                            echo -e "\e[31mWarning:\e[0m invalid choice"
+                    else
+                        echo -e "\e[31mWarning:\e[0m invalid choice"
+                        display_select_menu "$table" "$dbname"
+                    fi
+                done
+            fi
+            ;;
+        3)
+            if ! file_empty "$table"; then
+                echo -e "\e[36mThere is no data in table "$table"\e[0m"
+                read -p "Press (C/c) to continue: " choice
+                case "$choice" in
+                [cC])
+                    PS3="$dbname> "
+                    display_table_menu "$dbname"
+                    ;;
+                *)
+                    echo "Exit...."
+                    exit
+                    ;;
+                esac
+            else
+                echo -e "\e[36mThese are the fileds in table "$table":\e[0m"
+                fields=($(awk -F: 'NR==1 { gsub(":", "\t"); print }' ".$table-metadata.txt"))
+                echo -e "\e[36mChoose field:\e[0m"
+                select field in "${fields[@]}"; do
+                    if [[ -n $field ]]; then
+                        read -p "Please enter the column value to get it's rows: " column_value
+                        #validation on column value
+                        if ! delete_row_data "$table" "$REPLY" "$column_value" "$dbname"; then
+                            echo -e "\e[31mWarning:\e[0m No data found"
                             display_select_from_table_menu "$table" "$dbname"
                         fi
-                    done
-                fi
+                        PS3="$dbname> "
+                        display_table_menu "$dbname"
+                    else
+                        echo -e "\e[31mWarning:\e[0m invalid choice"
+                        display_select_from_table_menu "$table" "$dbname"
+                    fi
+                done
+            fi
             ;;
         4) display_table_menu "$dbname" ;;
         *) echo -e "\e[31mWarning:\e[0m invalid choice" ;;

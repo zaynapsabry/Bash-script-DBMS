@@ -1,3 +1,0 @@
-name:id:age:email
-string:int:int:string
-notnull:primarykey:none:none

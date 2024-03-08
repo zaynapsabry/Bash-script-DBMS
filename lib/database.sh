@@ -79,3 +79,28 @@ function connect_to_db {
         return 0
     fi
 }
+
+#--------------- function to rename a database ----------------#
+function renameDB {
+    local old_name=$1
+    local new_name=$2
+    
+    if ! validate_name "$new_name" ; then
+        return 1
+    fi
+    if ! directory_exists "$database_path/$old_name";
+    then
+        echo -e "\e[31mError\e[0m: Database '$old_name' doesn't exist."
+        return 1
+    else
+        if directory_exists "$database_path/$new_name";
+        then
+            echo -e "\e[31mError\e[0m: Database '$new_name' already exists."
+            return 1
+        else
+            mv "$database_path/$old_name" "$database_path/$new_name"
+            echo -e "Database '$old_name' renamed to '$new_name' \e[32msuccessfully\e[0m."
+            return 0
+        fi
+    fi
+}

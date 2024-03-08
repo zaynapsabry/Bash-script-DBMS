@@ -29,7 +29,7 @@ function display_main_menu {
     echo -e "\e[36m--------------------- Welcome to ZSH DBMS --------------------\e[0m"
     echo " "
     PS3="Main Menu> "
-    select choice in "Create a new database" "List existing databases" "Drop a database" "Connect to a database" "Exit"; do
+    select choice in "Create a new database" "List existing databases" "Drop a database" "Connect to a database" "Rename DB" "Exit"; do
         case $REPLY in
         1)
             read -p "Enter db name to create: " name
@@ -90,7 +90,37 @@ function display_main_menu {
                 fi
             done
             ;;
-        5) exit 0 ;;
+        5) 
+            echo -e "\e[36mThese are the databases in the system:\e[0m"
+            echo -e "\e[36mChoose what you want to rename:\e[0m"
+            databases=($(ls "$database_path"))
+            select db in "${databases[@]}"; do
+                if [[ -n $db ]]; then
+                    valid=1
+                    while [ $valid -eq 1 ]; do
+                        read -p "Enter new name: " new_name
+                        if renameDB "$db" "$new_name"; then
+                            valid=0
+                        fi
+                    done
+                    display_main_menu
+                else
+                    echo -e "\e[31mWarning:\e[0m invalid choice"
+                    read -p "Press (C/c) to continue: " choice
+                    case "$choice" in
+                    [cC])
+                        display_main_menu
+                        ;;
+                    *)
+                        echo "Exit...."
+                        exit
+                        ;;
+                    esac
+                fi
+            done
+            
+        ;;
+        6) exit 0 ;;
         *) echo -e "\e[31mWarning:\e[0m invalid choice" ;;
         esac
     done

@@ -29,11 +29,11 @@ function display_main_menu {
     cd ../$database_path 2>>/dev/null
 
     # Draw DBMS in ASCII art
-    echo -e "\e[36m zz zz zz     ss ss ss     zz        zz    ss ss ss   \e[0m"
-    echo -e "\e[36m zz      zz   ss      ss   zz zz  zz zz  ss           \e[0m   "
-    echo -e "\e[36m zz       zz  ss ss ss     zz   zz   zz    ss ss ss   \e[0m "
-    echo -e "\e[36m zz      zz   ss      ss   zz        zz            ss \e[0m"
-    echo -e "\e[36m zz zz zz     ss ss ss     zz        zz    ss ss ss   \e[0m "
+    echo -e "\e[35m zz zz zz     ss ss ss     zz        zz    ss ss ss   \e[0m"
+    echo -e "\e[35m zz      zz   ss      ss   zz zz  zz zz  ss           \e[0m   "
+    echo -e "\e[35m zz       zz  ss ss ss     zz   zz   zz    ss ss ss   \e[0m "
+    echo -e "\e[35m zz      zz   ss      ss   zz        zz            ss \e[0m"
+    echo -e "\e[35m zz zz zz     ss ss ss     zz        zz    ss ss ss   \e[0m "
 
     echo " "
     PS3="Main Menu> "
@@ -177,7 +177,7 @@ function display_table_menu {
             fi
 
             ;;
-        3)
+        3)  # Dropping a table
             echo -e "\e[36mChoose a table to drop:\e[0m"
             tables=($(ls "../$dbname"))
             select table in "${tables[@]}"; do
@@ -201,7 +201,7 @@ function display_table_menu {
                 fi
             done
             ;;
-        4)
+        4)  # Insert data into a table
             echo -e "\e[36mChoose a table to insert into:\e[0m"
             tables=($(ls "../$dbname"))
             select table in "${tables[@]}"; do
@@ -282,7 +282,28 @@ function display_table_menu {
                 fi
             done
             ;;
-        7) echo "Update a table" ;;
+        7) # Update a table
+            echo -e "\e[36mChoose a table to update:\e[0m"
+            tables=($(ls "../$dbname"))
+            select table in "${tables[@]}"; do
+                if [[ -n $table ]]; then
+                    display_update_table_menu "$table" "$dbname"
+                else
+                    echo -e "\e[31mWarning:\e[0m invalid choice"
+                    read -p "Press (C/c) to continue: " choice
+                    case "$choice" in
+                    [cC])
+                        PS3="$dbname> "
+                        display_table_menu "$dbname"
+                        ;;
+                    *)
+                        echo "Exit...."
+                        exit
+                        ;;
+                    esac
+                fi
+            done
+            ;;
         8)
             display_main_menu
 
@@ -299,8 +320,6 @@ function enter_row_data {
 
     local column_values=()
     for ((i = 0; i < ${#column_names[@]}; i++)); do
-
-        # read -p "Enter the value for column '${column_names[i]}': " column_value
 
         local column_name=${column_names[i]}
 
@@ -421,6 +440,8 @@ function display_select_from_table_menu {
     done
 }
 
+#------------------------------- display_delete_from_table_menu function -------------------------------#
+
 function display_delete_from_table_menu {
     local table=$1
     local dbname=$2
@@ -522,48 +543,152 @@ function display_delete_from_table_menu {
     done
 }
 
-function display_create_table_menu {
-    local dbname=$1
-    local column_names=""
-    local types=""
-    local constraints=""
+#------------------------------- display_update_table_menu function -------------------------------#
 
-    read -p "Enter table name to create: " name
-    while ! validate_name "$name"; do
-        read -p "Enter table name to create: " name
-    done
+function display_update_table_menu {
+    local table=$1
+    local dbname=$2
+    PS3="Update table $table> "
+    select choice in "Update Column" "Update row" "Exit"; do
+        case $REPLY in
+        1)
+            if ! file_empty "$table"; then
+                echo -e "\e[36mThere is no data in table "$table"\e[0m"
+                read -p "Press (C/c) to continue: " choice
+                case "$choice" in
+                [cC])
+                    PS3="$dbname> "
+                    display_table_menu "$dbname"
+                    ;;
+                *)
+                    echo "Exit...."
+                    exit
+                    ;;
+                esac
+            else
+                echo -e "\e[36mThese are the fileds in table "$table":\e[0m"
+                fields=($(awk -F: 'NR==1 { gsub(":", "\t"); print }' ".$table-metadata.txt"))
 
-    read -p "Enter number of columns " num_col
-    while ! validate_num "$num_col"; do
-        read -p "Enter number of columns " num_col
-    done
+                pk_field_number=$(get_primary_key_number "$table")
 
-    for ((i = 1; i <= num_col; i++)); do
-        read -p "Enter column $i name: " col_name
-        if ! validate_name "$col_name"; then
-            read -p "Enter column $i name: " col_name
-        fi
-        column_names+="$col_name:"
-        select type in "int" "string"; do
-            case $REPLY in
-            1) types+="int:" ;;
-            2) types+="string:" ;;
-            *) echo -e "\e[31mWarning:\e[0m invalid choice" ;;
-            esac
-            break
-        done
-        select constrain in "primary key" "unique" "not null"; do
-            case $REPLY in
-            1) constraints+="primary key:" ;;
-            2) constraints+="unique:" ;;
-            3) constraints+="not null:" ;;
-            *) echo -e "\e[31mWarning:\e[0m invalid choice" ;;
-            esac
-            break
-        done
+                echo -e "\e[36mChoose field:\e[0m"
+                select field in "${fields[@]}"; do
+                    if [[ -n $field ]]; then
+                        pk_valid=0
+                        while [ $pk_valid -eq 0 ]; do
+                            if (($REPLY == $pk_field_number)); then
+                                echo -e "\e[31mWarning:\e[0m Column "$field" is the primary key and can't be updated"
+                                echo ""
+                                display_update_table_menu "$table" "$dbname"
+                            fi
+                            
+                            local unique_fields=$(get_unique_columns "$table")
+                            if [[ "${unique_fields[@]}" =~ "$REPLY" ]]; then  
+                                echo -e "\e[31mWarning:\e[0m Column "$field" has a unique constrains and can't be updated"
+                                echo ""
+                                display_update_table_menu "$table" "$dbname"
+                            fi 
+                                                         
+                            pk_valid=1
+                        done 
+
+                        valid=0
+                        while [ $valid -eq 0 ]; do
+                            read -p "Please enter the value you want to set this field with: " column_value
+                            if validate_col_type_value_input "$table" "$column_value" "$REPLY"; then
+                                valid=1
+                            fi
+                        done
+
+                        update_column_data "$table" "$REPLY" "$column_value"
+                        PS3="$dbname> "
+                        display_table_menu "$dbname"
+                    else
+                        echo -e "\e[31mWarning:\e[0m invalid choice"
+                        display_select_menu "$table" "$dbname"
+                    fi
+                done
+            fi
+            ;;
+        2)
+            if ! file_empty "$table"; then
+                echo -e "\e[36mThere is no data in table "$table"\e[0m"
+                read -p "Press (C/c) to continue: " choice
+                case "$choice" in
+                [cC])
+                    PS3="$dbname> "
+                    display_table_menu "$dbname"
+                    ;;
+                *)
+                    echo "Exit...."
+                    exit
+                    ;;
+                esac
+            else
+                local where_field
+                local where_field_value
+                echo -e "\e[36mThese are the fileds in table "$table":\e[0m"
+                fields=($(awk -F: 'NR==1 { gsub(":", "\t"); print }' ".$table-metadata.txt"))
+
+                echo -e "\e[36mChoose the field of the where clause:\e[0m" 
+                select field in "${fields[@]}"; do
+                    if [[ -n $field ]]; then                          
+                        valid=0
+                        while [ $valid -eq 0 ]; do
+                            read -p "Please enter the value of $field: " column_value
+                            if validate_col_type_value_input "$table" "$column_value" "$REPLY"; then
+                                local field_values=$(get_field_values "$table" "$REPLY")
+                                if [[ "${field_values[@]}" == *"$column_value"* ]]; then  
+                                    valid=1
+                                else  
+                                    # read -p $'\e[31mWarning:\e[0m Column '"$field"' doesn\'t have this value\n\nPlease enter the value of '"$field"': " column_value
+
+                                    echo -e "\e[31mWarning:\e[0m Column $field doesn't have this value" 
+                                    echo ""
+                                    read -p "Please enter the value of $field: " column_value
+                                fi 
+                            fi     
+                        done  
+   
+                    else
+                        echo -e "\e[31mWarning:\e[0m invalid choice"
+                        display_select_from_table_menu "$table" "$dbname"
+                    fi
+                    where_field="$REPLY"
+                    where_field_value="$column_value"
+                    break;
+                done
+
+                echo -e "\e[36mChoose the field you want to update:\e[0m"
+                select field in "${fields[@]}"; do
+                    if [[ -n $field ]]; then
+                        valid=0
+                        while [ $valid -eq 0 ]; do
+                            read -p "Please enter the value to update with: " column_value
+                            if validate_col_type_value_input "$table" "$column_value" "$REPLY"; then
+                                if validate_col_constraint_value_input_match "$table" "$column_value" "$REPLY"; then
+                                    valid=1
+                                fi
+                            fi     
+                        done
+
+                        update_row_data "$table" "$where_field" "$where_field_value" "$REPLY" "$column_value"
+                        PS3="$dbname> "
+                        display_table_menu "$dbname"        
+                    else
+                        echo -e "\e[31mWarning:\e[0m invalid choice"
+                        display_select_from_table_menu "$table" "$dbname"
+                    fi
+                done
+            fi
+            ;;
+        3) display_table_menu "$dbname" ;;
+        *) echo -e "\e[31mWarning:\e[0m invalid choice" ;;
+        esac
     done
-    create_table "$name" "$column_names" "$types" "$constraints" "$dbname"
 }
+
+#------------------------------- display_create_table_menu function -------------------------------#
 
 function display_create_table_menu {
     local dbname=$1
@@ -620,6 +745,8 @@ function display_create_table_menu {
     create_table "$name" "$dbname" "${column_names[@]}" "${types[@]}" "${constraints[@]}"
 }
 
+#------------------------------- display_select_type_menu function -------------------------------#
+
 function display_select_type_menu {
     local -n types=$1 2>>/dev/null
     select type in "int" "string"; do
@@ -640,6 +767,8 @@ function display_select_type_menu {
         break
     done
 }
+
+#------------------------------- display_select_constrains_menu function -------------------------------#
 
 function display_select_constrain_menu {
     local -n constraints=$1 2>/dev/null

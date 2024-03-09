@@ -1,7 +1,8 @@
 #!/bin/bash
 
 database_path="../databases"
-# Function to select all data from the table
+
+#------------------- Function to select all data from the table -------------------------#
 select_all_table_data() {
     local tablename=$1
     local dbname=$2
@@ -11,7 +12,7 @@ select_all_table_data() {
         gsub(":", "    ");
         printf color $0 reset "\n";
      }' "$tablename"
-    # echo "$(head -n 1 "$tablename" | tr ':' '\t')"
+    # echo "$(head -n 1 ".$tablename-metadata.txt" | tr ':' '\t')"
 
     # Print data, align columns nicely
     awk 'NR > 1 { gsub(":", "    "); print }' "$tablename"
@@ -19,7 +20,7 @@ select_all_table_data() {
     echo ""
 }
 
-# Function to select column data from the table
+#----------------------- Function to select column data from the table -----------------------#
 select_column_data() {
     local tablename=$1
     local field_number=$2
@@ -29,7 +30,7 @@ select_column_data() {
     echo ""
 }
 
-# Function to select row data from the table
+#---------------------- Function to select row data from the table --------------------------#
 select_row_data() {
     local tablename=$1
     local field_number=$2
@@ -56,7 +57,7 @@ select_row_data() {
     fi
 }
 
-# Function to delete all data from the table
+#---------------------- Function to delete all data from the table -----------------------#
 delete_all_table_data() {
     local tablename=$1
     local dbname=$2
@@ -65,7 +66,7 @@ delete_all_table_data() {
     echo ""
 }
 
-# Function to delete column data from the table
+#----------------------- Function to delete column data from the table ------------------#
 delete_column_data() {
     local tablename=$1
     local field_number=$2
@@ -83,7 +84,7 @@ delete_column_data() {
     fi
 }
 
-# Function to delete row data from the table
+#------------------------- Function to delete row data from the table ------------------------#
 delete_row_data() {
     local tablename=$1
     local field_number=$2
@@ -111,7 +112,7 @@ delete_row_data() {
     fi
 }
 
-# Function to check if a column exists in the header
+#-------------------- Function to check if a column exists in the header -------------------- #
 check_column_existence() {
     local column=$1
     local tablename=$2
@@ -120,11 +121,11 @@ check_column_existence() {
     if awk -F: -v col="$column" 'NR==1 {for (i=1; i<=NF; i++) if ($i == col) exit 0} {exit 1}' "$tablename"; then
         echo -e "\e[36mColumn '$column' exists\e[0m "
     else
-        echo -e "\e[36mColumn '$column' doesn't exist in the table '$tablename'\e[0m "
+        echo -e "\e[36mColumn '$column' doesn't exist in the table '.$tablename-metadata.txt'\e[0m "
     fi
 }
 
-# Function to check if a column value exists in the file
+#------------------- Function to check if a column value exists in the file ---------------------#
 check_column_value_existence() {
     local column_value=$1
     local tablename=$2
@@ -182,7 +183,7 @@ function create_table() {
     echo ""
 }
 
-# Function to drop a table
+# ------------------------- drop_table function -------------------------#
 function drop_table() {
     local tablename=$1
     local dbname=$2
@@ -196,7 +197,7 @@ function drop_table() {
     fi
 }
 
-
+# ------------------------- insert_into_table function -------------------------#
 function insert_into_table {
     local tablename=$1
     local -a column_values=($2)
@@ -211,3 +212,39 @@ function insert_into_table {
     echo ""
 
 }
+
+#----------------------- Function to update column data in the table ------------------#
+update_column_data() {
+    local tablename=$1
+    local field_number=$2
+    local column_value=$3
+
+    # Use awk to update column value with the one entered by user
+
+    awk -v field="$field_number" -v value="$column_value" 'BEGIN{FS=OFS=":"} { $field=value; print }' "$tablename" > "$tablename.tmp" && mv "$tablename.tmp" "$tablename"
+    echo -e "All data in this column updated \e[32msuccessfully\e[0m."
+    echo ""
+}
+
+#----------------------- Function to update row data in the table ------------------#
+update_row_data() {
+    local tablename=$1
+    local where_field_number=$2
+    local where_field_value=$3
+    local updated_field_number=$4 
+    local updated_field_value=$5 
+
+    # Use awk to update row value with the one entered by user
+    awk -v where_field="$where_field_number" -v where_value="$where_field_value" -v updated_field="$updated_field_number" -v new_value="$updated_field_value" 'BEGIN{FS=OFS=":"} {
+        if ($where_field == where_value) {
+            $updated_field = new_value
+        }
+        print
+    }' "$tablename" > "$tablename.tmp" && mv "$tablename.tmp" "$tablename"
+
+    echo -e "Table updated \e[32msuccessfully\e[0m."
+    echo ""
+}
+
+
+

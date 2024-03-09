@@ -81,11 +81,10 @@ function validate_num() {
 function validate_col_type_value_input {
     local tablename=$1
     local col_value=$2
-    local column=$3 # col num
-    # local dbname=$4
+    local column_number=$3 
 
     local col_type
-    col_type=$(awk -F: -v col="$column" '
+    col_type=$(awk -F: -v col="$column_number" '
         BEGIN { found=0 }
         NR==2 {
             split($0, types)
@@ -101,12 +100,14 @@ function validate_col_type_value_input {
     if [[ "$col_type" == "int" ]]; then
         if ! [[ "$col_value" =~ ^[0-9]+$ ]]; then
             echo -e "\e[31mError:\e[0m The value of the column should be an integer." >&2
+            echo "" >&2
             return 1
         fi
         
     elif [[ "$col_type" == "string" ]]; then
         if ! [[ "$col_value" =~ ^[a-zA-Z]+$ ]]; then
             echo -e "\e[31mError:\e[0m The value of the column should be a string." >&2
+            echo "" >&2
             return 1
         fi
     fi
@@ -126,6 +127,7 @@ function validate_col_constraint_value_input_match {
         if (($column_number == $not_null_column)); then
             if [[ "$column_value" =~ ^([nN][uU][lL]{2}|)$ ]]; then
                 echo -e "\e[31mError:\e[0m The value of the column should not be empty." >&2
+                echo "" >&2
                 return 1
             fi
         fi
@@ -137,6 +139,7 @@ function validate_col_constraint_value_input_match {
             unique_column_values=$(awk -F: -v col="$column_number" 'NR>=1 {print $col}' "$tablename")
             if [[ "$unique_column_values" =~ $column_value ]]; then
                 echo -e "\e[31mError:\e[0m The value of the column should be unique." >&2
+                echo "" >&2
                 return 1
             fi
         fi
@@ -147,6 +150,7 @@ function validate_col_constraint_value_input_match {
         pk_column_values=$(awk -F: -v col="$column_number" 'NR>=1 {print $col}' "$tablename")
         if [[ "$pk_column_values" =~ $column_value ]] && [[ ! "$column_value" =~ ^([nN][uU][lL]{2}|)$ ]]; then
             echo -e "\e[31mError:\e[0m The value of the column should be unique and not null." >&2
+            echo "" >&2
             return 1
         fi
     fi
@@ -221,4 +225,13 @@ function get_unique_columns {
             }
         }' ".$tablename-metadata.txt"))
     echo "${unique_columns[@]}"
+}
+
+function get_field_values {
+    local tablename=$1
+    local column_num=$2
+
+    local column_values=($(awk -F: -v col="$column_num" 'NR>=1 {print $col}' "$tablename"))
+
+    echo "${column_values[@]}"
 }

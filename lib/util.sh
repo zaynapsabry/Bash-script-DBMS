@@ -77,13 +77,15 @@ function validate_num() {
 
 }
 
+
 function validate_col_type_value_input {
-    local col_value=$1
-    local tablename=$2
-    local column=$3
+    local tablename=$1
+    local col_value=$2
+    local column=$3 # col num
     # local dbname=$4
 
-    local col_type=$(awk -F: -v col="$column" '
+    local col_type
+    col_type=$(awk -F: -v col="$column" '
         BEGIN { found=0 }
         NR==2 {
             split($0, types)
@@ -96,57 +98,61 @@ function validate_col_type_value_input {
             }
         }' ".$tablename-metadata.txt")
 
-    # # echo "$col_type"
-
-    # if [[ -z "$col_type" ]]; then
-    #     echo "Column '$column' not found in metadata."
-    #     return 1
-    # fi
-
     if [[ "$col_type" == "int" ]]; then
         if ! [[ "$col_value" =~ ^[0-9]+$ ]]; then
-            echo -e "\e[31mError:\e[0m The value of the column should be an integer."
+            echo -e "\e[31mError:\e[0m The value of the column should be an integer." >&2
             return 1
         fi
+        
     elif [[ "$col_type" == "string" ]]; then
         if ! [[ "$col_value" =~ ^[a-zA-Z]+$ ]]; then
-            echo -e "\e[31mError:\e[0m The value of the column should be a string."
+            echo -e "\e[31mError:\e[0m The value of the column should be a string." >&2
             return 1
         fi
     fi
     return 0
 }
 
-# function validate_col_constraint_value {
-#       local tablename=$1
-#     local metadata_file=".$tablename-metadata.txt"
-#        # Validate column values
-#     for ((i = 0; i < ${#column_names[@]}; i++)); do
-#         local column_name=${column_names[i]}
-#         local column_value=${column_values[i]}
+function validate_col_constraint_value_input_match {
+    local tablename=$1
+    local column_value=$2
+    local column_number=$3
 
-#         # Check NOT NULL constraint
-#         if [[ " ${not_null_columns[@]} " =~ " $column_name " ]] && [ -z "$column_value" ]; then
-#             echo "Error: $column_name cannot be NULL."
-#             return 1
-#         fi
+    local not_null_columns=($(get_not_null_columns "$tablename"))
+    local unique_columns=($(get_unique_columns "$tablename"))
+    local pk_field_number=$(get_primary_key_number "$tablename")
+    
+    for not_null_column in "${not_null_columns[@]}"; do
+        if (($column_number == $not_null_column)); then
+            if [[ "$column_value" =~ ^([nN][uU][lL]{2}|)$ ]]; then
+                echo -e "\e[31mError:\e[0m The value of the column should not be empty." >&2
+                return 1
+            fi
+        fi
+    done
 
-#         # Check UNIQUE constraint
-#         if [[ " ${unique_columns[@]} " =~ " $column_name " ]]; then
-#             if grep -q "^$column_value$" "$tablename"; then
-#                 echo "Error: $column_name must be unique."
-#                 return 1
-#             fi
-#         fi
+    for unique_column in "${unique_columns[@]}"; do
+        if (($column_number == $unique_column)); then
+            local unique_column_values
+            unique_column_values=$(awk -F: -v col="$column_number" 'NR>=1 {print $col}' "$tablename")
+            if [[ "$unique_column_values" =~ $column_value ]]; then
+                echo -e "\e[31mError:\e[0m The value of the column should be unique." >&2
+                return 1
+            fi
+        fi
+    done
 
-#         # Check PRIMARY KEY constraint
-#         if [[ " $primary_keys " =~ " $column_name " ]] && grep -q "^$column_value$" "$tablename"; then
-#             echo "Error: $column_name must be unique (Primary Key constraint)."
-#             return 1
-#         fi
-#     done
+    if (($column_number == $pk_field_number)); then
+        local pk_column_values
+        pk_column_values=$(awk -F: -v col="$column_number" 'NR>=1 {print $col}' "$tablename")
+        if [[ "$pk_column_values" =~ $column_value ]] && [[ ! "$column_value" =~ ^([nN][uU][lL]{2}|)$ ]]; then
+            echo -e "\e[31mError:\e[0m The value of the column should be unique and not null." >&2
+            return 1
+        fi
+    fi
 
-# }
+    return 0
+}
 
 function get_primary_key_number {
     local tablename=$1
@@ -216,4 +222,3 @@ function get_unique_columns {
         }' ".$tablename-metadata.txt"))
     echo "${unique_columns[@]}"
 }
-

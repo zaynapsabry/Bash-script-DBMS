@@ -213,22 +213,12 @@ function display_table_menu {
                     echo "${fields[@]}"
                     echo -e "The primary key field is: ${fields[$pk_field_number - 1]}"
 
-                    # Read values for each field
-                    # declare -a values # Declare an empty array to store values
-                    # for ((i = 0; i < ${#fields[@]}; i++)); do
-                    #     read -p "Enter ${fields[$i]}: " value
-                    #     values+=("$value")
-                    # done
+                    col_values=$(enter_row_data "$table" "${fields[*]}")
 
-                    # Debugging output
-                    # echo "Values: ${values[@]}"
-                    echo "Fields: ${fields[@]}"
-
-                    # Call the insert_into_table function with arrays passed as arguments
-                    insert_into_table "$table" "$dbname" "${fields[*]}"
-
-                    # insert_into_table "$table" "$dbname" "${fields[@]}"
-
+                    last_index=$((${#col_values[@]} - 1))
+                    last_element="${col_values[last_index]}"
+                    
+                    insert_into_table "$table" "${last_element[*]}"
                     PS3="$dbname> "
                     display_table_menu "$dbname"
                 else
@@ -246,6 +236,7 @@ function display_table_menu {
                     esac
                 fi
             done
+
             ;;
         5) # Select from a table
             echo -e "\e[36mChoose a table to select from:\e[0m"
@@ -300,6 +291,37 @@ function display_table_menu {
         esac
     done
 }
+#------------------------------- insert_into_table input from user -------------------------------#
+function enter_row_data {
+    local tablename=$1
+    local -a column_names=($2)
+    # local field_numbers=$3
+
+    local column_values=()
+    for ((i = 0; i < ${#column_names[@]}; i++)); do
+
+        # read -p "Enter the value for column '${column_names[i]}': " column_value
+
+        local column_name=${column_names[i]}
+
+        valid=0
+        while [ $valid -eq 0 ]; do
+            read -p "Enter the value for column '${column_names[i]}': " column_value
+            if validate_col_type_value_input "$tablename" "$column_value" "$(($i + 1))"; then
+                if validate_col_constraint_value_input_match "$tablename" "$column_value" "$(($i + 1))"; then
+                    valid=1
+                fi
+            fi
+            # echo "$(($i+1))"
+        done
+
+        column_values[$i]=$column_value
+    done
+
+    echo "${column_values[@]}"
+}
+
+#------------------------------- display_select_from_table_menu function -------------------------------#
 
 function display_select_from_table_menu {
     local table=$1

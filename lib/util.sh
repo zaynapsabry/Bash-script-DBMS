@@ -41,20 +41,20 @@ function validate_name {
     if [ -z "$name" ]; then
         echo -e "\e[31mWarning:\e[0m Name is required"
         return 1
-    # Check if name contains any spaces
-    elif [[ "$name" =~ [[:space:]] ]]; then
+        # Check if name contains any spaces
+        elif [[ "$name" =~ [[:space:]] ]]; then
         echo -e "\e[31mWarning:\e[0m Name cannot contain spaces"
         return 1
-    # Check for invalid characters
-    elif [[ "$name" =~ [^a-zA-Z0-9_] ]]; then
+        # Check for invalid characters
+        elif [[ "$name" =~ [^a-zA-Z0-9_] ]]; then
         echo -e "\e[31mWarning:\e[0m Name contains invalid characters"
         return 1
-    # Check if name exceeds 64 characters
-    elif [ ${#name} -gt 64 ]; then
+        # Check if name exceeds 64 characters
+        elif [ ${#name} -gt 64 ]; then
         echo -e "\e[31mWarning:\e[0m Name is too long"
         return 1
-    # Check if name starts with a number
-    elif [[ "$name" =~ ^[0-9] ]]; then
+        # Check if name starts with a number
+        elif [[ "$name" =~ ^[0-9] ]]; then
         echo -e "\e[31mWarning:\e[0m Name cannot start with a number"
         return 1
     else
@@ -65,24 +65,39 @@ function validate_name {
 
 function validate_num() {
     local num=$1
-    if [[ "$num" =~ ^[0-9]+$ ]]; then
-        return 0
-    elif [ -z "$num" ]; then
+    
+    # Check if the input contains non-numeric characters
+    if ! [[ "$num" =~ ^[0-9]+$ ]]; then
+        echo -e "\e[31mWarning:\e[0m Input must be a valid number"
+        return 1
+        elif [[ $num = ~[[:space:]] ]]; then
+        echo -e "\e[31mWarning:\e[0m Number cannot contain spaces"
+        return 1
+        elif [ $num -lt 0 ]; then
+        echo -e "\e[31mWarning:\e[0m Number cannot be negative"
+        return 1
+        elif [ $num -eq 0 ]; then
+        echo -e "\e[31mWarning:\e[0m Number cannot be zero"
+        return 1
+        elif [ $num -gt 10 ]; then
+        echo -e "\e[31mWarning:\e[0m Number is too large"
+        return 1
+        elif [ -z "$num" ]; then
         echo -e "\e[31mWarning:\e[0m Number is required"
         return 1
     else
-        echo -e "\e[31mWarning:\e[0m Invalid number"
-        return 1
+        return 0
     fi
-
 }
+
+
 
 
 function validate_col_type_value_input {
     local tablename=$1
     local col_value=$2
-    local column_number=$3 
-
+    local column_number=$3
+    
     local col_type
     col_type=$(awk -F: -v col="$column_number" '
         BEGIN { found=0 }
@@ -95,8 +110,8 @@ function validate_col_type_value_input {
             if (found == 1) {
                 print col_type
             }
-        }' ".$tablename-metadata.txt")
-
+    }' ".$tablename-metadata.txt")
+    
     if [[ "$col_type" == "int" ]]; then
         if ! [[ "$col_value" =~ ^[0-9]+$ ]]; then
             echo -e "\e[31mError:\e[0m The value of the column should be an integer." >&2
@@ -104,7 +119,7 @@ function validate_col_type_value_input {
             return 1
         fi
         
-    elif [[ "$col_type" == "string" ]]; then
+        elif [[ "$col_type" == "string" ]]; then
         if ! [[ "$col_value" =~ ^[a-zA-Z]+$ ]]; then
             echo -e "\e[31mError:\e[0m The value of the column should be a string." >&2
             echo "" >&2
@@ -118,7 +133,7 @@ function validate_col_constraint_value_input_match {
     local tablename=$1
     local column_value=$2
     local column_number=$3
-
+    
     local not_null_columns=($(get_not_null_columns "$tablename"))
     local unique_columns=($(get_unique_columns "$tablename"))
     local pk_field_number=$(get_primary_key_number "$tablename")
@@ -132,7 +147,7 @@ function validate_col_constraint_value_input_match {
             fi
         fi
     done
-
+    
     for unique_column in "${unique_columns[@]}"; do
         if (($column_number == $unique_column)); then
             local unique_column_values
@@ -144,7 +159,7 @@ function validate_col_constraint_value_input_match {
             fi
         fi
     done
-
+    
     if (($column_number == $pk_field_number)); then
         local pk_column_values
         pk_column_values=$(awk -F: -v col="$column_number" 'NR>=1 {print $col}' "$tablename")
@@ -154,13 +169,13 @@ function validate_col_constraint_value_input_match {
             return 1
         fi
     fi
-
+    
     return 0
 }
 
 function get_primary_key_number {
     local tablename=$1
-
+    
     local pk_field_number=$(awk -F: '
         BEGIN { found=0 }
         NR==3 {
@@ -177,7 +192,7 @@ function get_primary_key_number {
             if (found == 1) {
                 print pk_field_number
             }
-        }' ".$tablename-metadata.txt")
+    }' ".$tablename-metadata.txt")
     echo "$pk_field_number"
 }
 
@@ -200,7 +215,7 @@ function get_not_null_columns {
                     printf "%s ", i
                 }
             }
-        }' ".$tablename-metadata.txt"))
+    }' ".$tablename-metadata.txt"))
     echo "${not_null_columns[@]}"
 }
 
@@ -223,15 +238,15 @@ function get_unique_columns {
                     printf "%s ", i
                 }
             }
-        }' ".$tablename-metadata.txt"))
+    }' ".$tablename-metadata.txt"))
     echo "${unique_columns[@]}"
 }
 
 function get_field_values {
     local tablename=$1
     local column_num=$2
-
+    
     local column_values=($(awk -F: -v col="$column_num" 'NR>=1 {print $col}' "$tablename"))
-
+    
     echo "${column_values[@]}"
 }

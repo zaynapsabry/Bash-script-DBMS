@@ -5,7 +5,7 @@ database_path="../databases"
 #------------------- Function to select all data from the table -------------------------#
 select_all_table_data() {
     local tablename=$1
-    local dbname=$2
+
     # Print header
     awk 'BEGIN { FS=":"; color="\033[1;36m"; reset="\033[0m"; }
         NR==1 {
@@ -15,7 +15,7 @@ select_all_table_data() {
     # echo "$(head -n 1 ".$tablename-metadata.txt" | tr ':' '\t')"
     
     # Print data, align columns nicely
-    awk 'NR >= 1 { gsub(":", "    "); print }' "$tablename"
+    awk 'NR >= 1 { gsub(":", "    "); print }' "$tablename" 
     
     echo ""
 }
@@ -25,7 +25,7 @@ select_all_table_data() {
 select_column_data() {
     local tablename=$1
     local field_number=$2
-    local dbname=$3
+
     awk -F: -v col="$field_number" ' NR>=1 {print $col}' "$tablename"
     echo ""
 }
@@ -35,7 +35,6 @@ select_row_data() {
     local tablename=$1
     local field_number=$2
     local column_value=$3
-    local dbname=$4
     
     if validate_col_type_value_input  "$tablename" "$column_value" "$field_number" ; then
         awk 'BEGIN { FS=":"; color="\033[1;36m"; reset="\033[0m"; }
@@ -65,7 +64,7 @@ select_row_data() {
 #---------------------- Function to delete all data from the table -----------------------#
 delete_all_table_data() {
     local tablename=$1
-    local dbname=$2
+
     truncate --size 0 "$tablename"
     echo -e "All data in "$tablename" deleted\e[32msuccessfully\e[0m."
     echo ""
@@ -75,18 +74,10 @@ delete_all_table_data() {
 delete_column_data() {
     local tablename=$1
     local field_number=$2
-    local dbname=$3
-    local pk_number=$4
-    # Use awk to print all columns except the specified one
-    if [[ $field_number == $pk_number ]]; then
-        echo -e "\e[31mWarning: \e[0mColumn "$pk_number" is the primary key you can't delete it"
-        echo ""
-    else
-        awk -v field="$field_number" 'BEGIN{FS=OFS=":"} {$field=""; $1=$1; print}' "$tablename" >"$tablename.tmp" && mv "$tablename.tmp" "$tablename"
-        
-        echo -e "All data in this column deleted \e[32msuccessfully\e[0m."
-        echo ""
-    fi
+
+    awk -v field="$field_number" 'BEGIN{FS=OFS=":"} {$field=""; $1=$1; print}' "$tablename" >"$tablename.tmp" && mv "$tablename.tmp" "$tablename"
+    echo -e "All data in this column deleted \e[32msuccessfully\e[0m."
+    echo ""
 }
 
 #------------------------- Function to delete row data from the table ------------------------#
@@ -94,7 +85,6 @@ delete_row_data() {
     local tablename=$1
     local field_number=$2
     local column_value=$3
-    local dbname=$4
     
     if validate_col_type_value_input  "$tablename" "$column_value" "$field_number" ; then
         
@@ -147,13 +137,9 @@ check_column_value_existence() {
 # ------------------------- create_table function -------------------------#
 function create_table() {
     local tablename=$1
-    local dbname=$2
     local -n column_names=$3 2>>/dev/null
     local -n types=$4 2>>/dev/null
     local -n constraints=$5 2>>/dev/null
-    
-    
-    
     
     metadata_file=".$tablename-metadata.txt"
     # Create the table file
@@ -189,7 +175,6 @@ function create_table() {
 # ------------------------- drop_table function -------------------------#
 function drop_table() {
     local tablename=$1
-    local dbname=$2
     
     if file_exists "$tablename"; then
         rm "$tablename"

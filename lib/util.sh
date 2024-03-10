@@ -250,3 +250,25 @@ function get_field_values {
     
     echo "${column_values[@]}"
 }
+
+
+# function get_col_type {
+#     local tablename=$1
+#     local column_number=$2
+    
+#     local col_type
+#     col_type=$(awk -F: -v col="$column_number" '
+#         BEGIN { found=0 }
+#         NR==2 {
+#             split($0, types)
+#             col_type = types[col]
+#             found=1
+#         }
+#         END {
+#             if (found == 1) {
+#                 print col_type
+#             }
+#     }' ".$tablename-metadata.txt")
+    
+#     echo "$col_type"
+# }

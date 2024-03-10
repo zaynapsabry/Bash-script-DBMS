@@ -11,22 +11,22 @@ select_all_table_data() {
         NR==1 {
         gsub(":", "    ");
         printf color $0 reset "\n";
-    }' "$tablename"
+    }' ".$tablename-metadata.txt"
     # echo "$(head -n 1 ".$tablename-metadata.txt" | tr ':' '\t')"
     
     # Print data, align columns nicely
-    awk 'NR > 1 { gsub(":", "    "); print }' "$tablename"
+    awk 'NR >= 1 { gsub(":", "    "); print }' "$tablename"
     
     echo ""
 }
+
 
 #----------------------- Function to select column data from the table -----------------------#
 select_column_data() {
     local tablename=$1
     local field_number=$2
     local dbname=$3
-    awk -F: -v col="$field_number" ' NR>1 {print $col}' "$tablename"
-    echo "$column"
+    awk -F: -v col="$field_number" ' NR>=1 {print $col}' "$tablename"
     echo ""
 }
 
@@ -37,12 +37,17 @@ select_row_data() {
     local column_value=$3
     local dbname=$4
     
-    if validate_col_type_value_input "$column_value" "$tablename" "$field_number" "$dbname"; then
-        
+    if validate_col_type_value_input  "$tablename" "$column_value" "$field_number" ; then
+        awk 'BEGIN { FS=":"; color="\033[1;36m"; reset="\033[0m"; }
+        NR==1 {
+        gsub(":", "    ");
+        printf color $0 reset "\n";
+        }' ".$tablename-metadata.txt"
         # Use awk to iterate over each row in the file
         awk -F: -v field="$field_number" -v val="$column_value" 'BEGIN{OFS="\t";FS=":"}{
             if ($(field) == val) {
                 print_found=1
+                gsub(":", "    ");
                 print
             }
         } END {
@@ -91,7 +96,7 @@ delete_row_data() {
     local column_value=$3
     local dbname=$4
     
-    if validate_col_type_value_input "$column_value" "$tablename" "$field_number" "$dbname"; then
+    if validate_col_type_value_input  "$tablename" "$column_value" "$field_number" ; then
         
         # Use awk to iterate over each row in the file
         awk -F: -v field="$field_number" -v val="$column_value" 'BEGIN{OFS="\t";FS=":"}{
@@ -204,7 +209,7 @@ function insert_into_table {
     for ((i = 1; i < ${#column_values[@]}; i++)); do
         printf ":%s" "${column_values[$i]}" >>"$tablename"
     done
-    echo "" >>"$tablename"
+    printf "" >>"$tablename"
     # echo "$column_values"
     echo -e "Data inserted \e[32msuccessfully\e[0m."
     echo ""

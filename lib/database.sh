@@ -6,8 +6,7 @@ source ../lib/util.sh
 function initiate_databases(){
     if ! directory_exists $database_path; then
         mkdir "$database_path"
-        echo "dbs"
-    fi     
+    fi
 }
 
 
@@ -24,6 +23,7 @@ function createDB(){
         # Check if the 'databases' directory exists, if not, create it
         mkdir -p "$database_path/$dbname"
         echo -e "Database '$dbname' created \e[32msuccessfully\e[0m."
+        echo ""
         return 0
         # There is a database with the same name as user entered
     else
@@ -41,11 +41,11 @@ function listDB(){
         echo -e "\e[36mThese are the databases in the system:\e[0m"
         for db in $(ls "$database_path")
         do
-            databases+="$(basename "$db") " 
+            databases+="$(basename "$db") "
         done
         echo "$databases"
     else
-        echo "There are no databases in the system :("
+        echo -e "\e[31mWarning\e[0m: There are no databases in the system"
     fi
 }
 
@@ -66,6 +66,7 @@ function dropDB(){
     else
         rm -r "$database_path/$dbname"
         echo -e "Database '$dbname' dropped \e[32msuccessfully\e[0m."
+        echo ""
         return 0
     fi
 }
@@ -74,7 +75,7 @@ function dropDB(){
 
 function connect_to_db {
     local db_name=$1
-   
+    
     if ! directory_exists $database_path/$db_name; then
         echo -e "\e[31mWarning\e[0m: Database does not exist"
         return 1
@@ -108,6 +109,7 @@ function renameDB {
         else
             mv "$database_path/$old_name" "$database_path/$new_name"
             echo -e "Database '$old_name' renamed to '$new_name' \e[32msuccessfully\e[0m."
+            echo ""
             return 0
         fi
     fi

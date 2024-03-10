@@ -1,5 +1,5 @@
 #!/bin/bash
-database_path="../database"
+database_path="../databases"
 
 function directory_exists {
     if [ -d "$1" ]; then
@@ -152,7 +152,7 @@ function validate_col_constraint_value_input_match {
         if (($column_number == $unique_column)); then
             local unique_column_values
             unique_column_values=$(awk -F: -v col="$column_number" 'NR>=1 {print $col}' "$tablename")
-            if [[ "$unique_column_values" =~ $column_value ]]; then
+            if [[ "$unique_column_values" == $column_value ]]; then
                 echo -e "\e[31mError:\e[0m The value of the column should be unique." >&2
                 echo "" >&2
                 return 1
@@ -163,7 +163,7 @@ function validate_col_constraint_value_input_match {
     if (($column_number == $pk_field_number)); then
         local pk_column_values
         pk_column_values=$(awk -F: -v col="$column_number" 'NR>=1 {print $col}' "$tablename")
-        if [[ "$pk_column_values" =~ $column_value ]] && [[ ! "$column_value" =~ ^([nN][uU][lL]{2}|)$ ]]; then
+        if [[ "$pk_column_values" == $column_value ]] && [[ ! "$column_value" =~ ^([nN][uU][lL]{2}|)$ ]]; then
             echo -e "\e[31mError:\e[0m The value of the column should be unique and not null." >&2
             echo "" >&2
             return 1

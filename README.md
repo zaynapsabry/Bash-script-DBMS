@@ -23,6 +23,7 @@ This project aims to develop a simple yet effective Database Management System (
 3. **Run the script:**
 
     ```bash
+    chmod +x dbms.sh
     ./dbms.sh
     ```
 
